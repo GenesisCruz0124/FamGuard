@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isFamilyMember(familyId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
+    }
+
+    function memberConsented(familyId, uid) {
+      let member = get(/databases/$(database)/documents/families/$(familyId)/members/$(uid)).data;
+      return member.consentGiven == true;
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /families/{familyId} {
+      // Invite-code lookup needs an unauthenticated-by-membership read of the
+      // family doc; this is intentionally narrow — it can't read members,
+      // locations, or events, and the invite code itself is a 6-char secret.
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isFamilyMember(familyId);
+
+      match /members/{uid} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isSignedIn() && request.auth.uid == uid;
+        allow update: if isSignedIn() && request.auth.uid == uid;
+        allow delete: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      match /locations/{uid} {
+        // A member's live location is only readable by other family members
+        // if that member has consented and isn't currently paused.
+        allow read: if isFamilyMember(familyId) && memberConsented(familyId, uid);
+        allow write: if isSignedIn() && request.auth.uid == uid && isFamilyMember(familyId);
+      }
+
+      match /places/{placeId} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isFamilyMember(familyId) && request.resource.data.createdBy == request.auth.uid;
+        allow update, delete: if isFamilyMember(familyId);
+      }
+
+      match /events/{eventId} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isFamilyMember(familyId) && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

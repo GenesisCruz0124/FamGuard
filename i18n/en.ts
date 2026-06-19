@@ -1,0 +1,60 @@
+export const en = {
+  onboarding: {
+    welcomeTitle: "Welcome to FamGuard",
+    welcomeBody:
+      "FamGuard shares your live location with your family so everyone can stay safe. Everyone in your family can see when you're sharing — there is no hidden or surreptitious tracking.",
+    consentLabel: "I consent to share my location with my family",
+    continue: "Continue",
+  },
+  auth: {
+    signInWithGoogle: "Sign in with Google",
+    signingIn: "Signing in...",
+  },
+  family: {
+    createFamily: "Create a family",
+    joinFamily: "Join a family",
+    familyName: "Family name",
+    inviteCode: "Invite code",
+    create: "Create",
+    join: "Join",
+    members: "Members",
+    yourInviteCode: "Your invite code",
+  },
+  map: {
+    sharingBanner: "Your location is being shared",
+    pauseSharing: "Pause sharing",
+    resumeSharing: "Resume sharing",
+    lastSeen: "Last seen {{time}} ago",
+    battery: "Battery {{level}}%",
+  },
+  places: {
+    title: "Places",
+    addPlace: "Add a place",
+    placeName: "Place name",
+    radius: "Radius (meters)",
+    save: "Save",
+  },
+  member: {
+    detail: "Member detail",
+    recentTrail: "Recent trail",
+  },
+  sos: {
+    button: "SOS",
+    sent: "SOS alert sent to your family",
+    imSafe: "I'm safe",
+    checkInSent: "Check-in sent",
+  },
+  settings: {
+    title: "Settings",
+    language: "Language",
+    english: "English",
+    taglish: "Taglish",
+    pauseSharing: "Pause sharing",
+    resumeSharing: "Resume sharing",
+    leaveFamily: "Leave family",
+    deleteMyData: "Delete my data",
+    signOut: "Sign out",
+  },
+};
+
+export type TranslationKeys = typeof en;

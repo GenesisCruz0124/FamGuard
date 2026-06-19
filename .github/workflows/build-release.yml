@@ -1,0 +1,65 @@
+name: Build and Release Android APK
+
+# Triggers on a version tag push (e.g. v1.0.0) or manual dispatch.
+# Required repo secrets:
+#   EXPO_TOKEN            - from `eas login` / expo.dev access token, used to run EAS builds.
+#   GOOGLE_SERVICES_JSON  - base64-encoded contents of google-services.json (Android Firebase config).
+# Optional repo secret:
+#   GOOGLE_SIGNIN_WEB_CLIENT_ID - the OAuth Web Client ID for Google Sign-In, exposed to app.config.ts.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > google-services.json
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Read app version
+        id: app_version
+        run: |
+          VERSION=$(node -p "require('./app.config.ts')" 2>/dev/null || node -e "console.log(require('./package.json').version)")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build Android APK (EAS local build)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          GOOGLE_SIGNIN_WEB_CLIENT_ID: ${{ secrets.GOOGLE_SIGNIN_WEB_CLIENT_ID }}
+        run: eas build --platform android --profile preview --local --non-interactive --output ./build.apk
+
+      - name: Rename artifact
+        id: rename
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$VERSION" = "$GITHUB_REF_NAME" ]; then VERSION="${{ steps.app_version.outputs.version }}"; fi
+          NAME="FamGuard-v${VERSION}.apk"
+          mv build.apk "$NAME"
+          echo "artifact=$NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rename.outputs.tag }}
+          name: FamGuard ${{ steps.rename.outputs.tag }}
+          files: ${{ steps.rename.outputs.artifact }}
+          generate_release_notes: true
