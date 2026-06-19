@@ -22,6 +22,10 @@ expo-env.d.ts
 /android
 /ios
 
+# Local debug builds (e.g. from a sandboxed `gradlew assembleDebug` test) —
+# not release artifacts, never committed.
+/dist-local
+
 # Metro
 .metro-health-check*
 
