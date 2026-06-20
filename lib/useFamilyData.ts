@@ -16,6 +16,7 @@ export function useFamily(familyId: string | undefined) {
   useEffect(() => {
     if (!familyId) return;
     return db.collection("families").doc(familyId).onSnapshot((snap) => {
+      if (!snap) return;
       setFamily((snap.data() as FamilyDoc) ?? null);
     });
   }, [familyId]);
@@ -33,6 +34,7 @@ export function useLiveMembers(familyId: string | undefined) {
     const unsubscribers: (() => void)[] = [];
 
     const unsubMembers = familyRef.collection("members").onSnapshot(async (membersSnap) => {
+      if (!membersSnap) return;
       unsubscribers.forEach((unsub) => unsub());
       unsubscribers.length = 0;
 
@@ -47,11 +49,13 @@ export function useLiveMembers(familyId: string | undefined) {
       membersSnap.docs.forEach((doc) => {
         const uid = doc.id;
         const unsubUser = db.collection("users").doc(uid).onSnapshot((userSnap) => {
+          if (!userSnap) return;
           setMembers((prev) =>
             prev.map((m) => (m.uid === uid ? { ...m, user: (userSnap.data() as UserDoc) ?? null } : m))
           );
         });
         const unsubLoc = familyRef.collection("locations").doc(uid).onSnapshot((locSnap) => {
+          if (!locSnap) return;
           setMembers((prev) =>
             prev.map((m) => (m.uid === uid ? { ...m, location: (locSnap.data() as LiveLocationDoc) ?? null } : m))
           );
@@ -79,6 +83,7 @@ export function usePlaces(familyId: string | undefined) {
       .doc(familyId)
       .collection("places")
       .onSnapshot((snap) => {
+        if (!snap) return;
         setPlaces(snap.docs.map((doc) => ({ id: doc.id, data: doc.data() as PlaceDoc })));
       });
   }, [familyId]);

@@ -42,7 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = db
       .collection("users")
       .doc(uid)
-      .onSnapshot((snap) => setUserDoc((snap.data() as UserDoc) ?? null));
+      .onSnapshot((snap) => {
+        if (!snap) return;
+        setUserDoc((snap.data() as UserDoc) ?? null);
+      });
     return unsubscribe;
   }, [uid]);
 
