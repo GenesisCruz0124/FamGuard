@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>FamGuard Activation Code Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #111; }
+  h1 { font-size: 20px; }
+  .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-top: 16px; }
+  button { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; }
+  button:disabled { background: #93c5fd; cursor: not-allowed; }
+  button.secondary { background: #6b7280; }
+  input[type="text"], input[type="number"] { border: 1px solid #ccc; border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; margin-top: 12px; }
+  #status { font-size: 13px; color: #666; margin-top: 8px; }
+  .error { color: #dc2626; }
+  .code-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-family: monospace; font-size: 15px; }
+  .code-row button { padding: 4px 10px; font-size: 12px; }
+  #generatorForm { display: none; }
+</style>
+</head>
+<body>
+  <h1>FamGuard Activation Code Generator</h1>
+  <p>Developer-only tool. Signs in with Google and writes new, unclaimed activation codes directly to Firestore.</p>
+
+  <div class="card">
+    <button id="signInBtn">Sign in with Google</button>
+    <button id="signOutBtn" class="secondary" style="display:none">Sign out</button>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="generatorForm">
+    <label for="count">Number of codes to generate (max 50)</label>
+    <input type="number" id="count" value="1" min="1" max="50" />
+
+    <label for="note">Note (optional)</label>
+    <input type="text" id="note" placeholder="e.g. batch for Lola's phone" />
+
+    <div style="margin-top: 16px;">
+      <button id="generateBtn">Generate</button>
+      <button id="copyAllBtn" class="secondary" style="display:none">Copy all</button>
+    </div>
+
+    <div id="results" style="margin-top: 16px;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // PASTE YOUR WEB APP CONFIG HERE.
+    // Firebase Console -> Project settings -> Add app -> Web (no hosting
+    // needed). This project currently only has an Android client
+    // registered, so a Web app must be added before this object is valid.
+    const firebaseConfig = {
+      apiKey: "PASTE_ME",
+      authDomain: "PASTE_ME",
+      projectId: "PASTE_ME",
+      storageBucket: "PASTE_ME",
+      messagingSenderId: "PASTE_ME",
+      appId: "PASTE_ME",
+    };
+
+    const ADMIN_EMAILS = ["genesiscruz.dev@gmail.com", "genesiscruz0124@gmail.com"];
+    const CODE_LENGTH = 8;
+    // Excludes visually ambiguous characters: 0, O, 1, I.
+    const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const statusEl = document.getElementById("status");
+    const formEl = document.getElementById("generatorForm");
+    const generateBtn = document.getElementById("generateBtn");
+    const copyAllBtn = document.getElementById("copyAllBtn");
+    const resultsEl = document.getElementById("results");
+
+    let generatedCodes = [];
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        statusEl.textContent = "Sign-in failed: " + err.message;
+        statusEl.classList.add("error");
+      });
+    });
+
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      statusEl.classList.remove("error");
+      if (!user) {
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        formEl.style.display = "none";
+        statusEl.textContent = "";
+        return;
+      }
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      const isAdmin = ADMIN_EMAILS.includes(user.email);
+      if (isAdmin) {
+        statusEl.textContent = `Signed in as ${user.email} (authorized).`;
+        formEl.style.display = "block";
+      } else {
+        statusEl.textContent = `Signed in as ${user.email} — not authorized to generate codes.`;
+        statusEl.classList.add("error");
+        formEl.style.display = "none";
+      }
+    });
+
+    function randomCode() {
+      const bytes = new Uint8Array(CODE_LENGTH);
+      crypto.getRandomValues(bytes);
+      let code = "";
+      for (let i = 0; i < CODE_LENGTH; i++) {
+        code += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+      }
+      return code;
+    }
+
+    async function generateUniqueCode() {
+      // Collisions are astronomically unlikely at 8 chars, but guard anyway.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const code = randomCode();
+        const snap = await getDoc(doc(db, "activationCodes", code));
+        if (!snap.exists()) return code;
+      }
+      throw new Error("Could not generate a unique code after 5 attempts");
+    }
+
+    generateBtn.addEventListener("click", async () => {
+      const count = Math.max(1, Math.min(50, Number(document.getElementById("count").value) || 1));
+      const note = document.getElementById("note").value.trim() || null;
+
+      generateBtn.disabled = true;
+      resultsEl.innerHTML = "";
+      generatedCodes = [];
+
+      try {
+        for (let i = 0; i < count; i++) {
+          const code = await generateUniqueCode();
+          await setDoc(doc(db, "activationCodes", code), {
+            deviceId: null,
+            boundUid: null,
+            usedAt: null,
+            createdAt: Date.now(),
+            note,
+          });
+          generatedCodes.push(code);
+          renderResults();
+        }
+      } catch (err) {
+        statusEl.textContent = "Generation failed: " + err.message;
+        statusEl.classList.add("error");
+      } finally {
+        generateBtn.disabled = false;
+      }
+    });
+
+    function renderResults() {
+      resultsEl.innerHTML = "";
+      generatedCodes.forEach((code) => {
+        const row = document.createElement("div");
+        row.className = "code-row";
+        const span = document.createElement("span");
+        span.textContent = code;
+        const btn = document.createElement("button");
+        btn.textContent = "Copy";
+        btn.addEventListener("click", () => navigator.clipboard.writeText(code));
+        row.appendChild(span);
+        row.appendChild(btn);
+        resultsEl.appendChild(row);
+      });
+      copyAllBtn.style.display = generatedCodes.length ? "inline-block" : "none";
+    }
+
+    copyAllBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(generatedCodes.join("\n"));
+    });
+  </script>
+</body>
+</html>

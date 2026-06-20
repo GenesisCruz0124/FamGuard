@@ -35,6 +35,13 @@ service cloud.firestore {
       return code.deviceId == null || code.deviceId == request.resource.data.deviceId;
     }
 
+    // Only these two developer accounts may mint new activation codes via
+    // the standalone generator tool (tools/activation-generator.html).
+    function isAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email in ["genesiscruz.dev@gmail.com", "genesiscruz0124@gmail.com"];
+    }
+
     match /users/{uid} {
       // trialStartedAt and activation.* live on this same doc; no extra
       // rules needed since they're just additional self-owned fields.
@@ -44,17 +51,24 @@ service cloud.firestore {
       allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 
-    // Activation codes are created manually via Firebase Console by the
-    // developer — no client ever creates one. Reading requires already
-    // knowing the exact code string (get-by-ID, not list-able), the same
-    // reasoning already used for the family invite-code read above.
+    // Activation codes are minted by the admin generator tool (below) or
+    // manually via Firebase Console — never created by the redeeming
+    // client. Reading requires already knowing the exact code string
+    // (get-by-ID, not list-able), the same reasoning already used for the
+    // family invite-code read above.
     match /activationCodes/{codeId} {
       allow read: if isSignedIn();
       allow update: if isSignedIn() &&
         request.resource.data.boundUid == request.auth.uid &&
         isUnclaimedOrOwnDevice(codeId) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["deviceId", "boundUid", "usedAt"]);
-      allow create, delete: if false;
+      // Codes are created either by the admin generator tool (this rule) or
+      // never otherwise — redemption only ever updates, never creates.
+      allow create: if isAdminEmail() &&
+        request.resource.data.deviceId == null &&
+        request.resource.data.boundUid == null &&
+        request.resource.data.usedAt == null;
+      allow delete: if false;
     }
 
     match /families/{familyId} {
