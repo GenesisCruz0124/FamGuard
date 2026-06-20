@@ -46,6 +46,11 @@ export const tl: TranslationKeys = {
     imSafe: "Ligtas ako",
     checkInSent: "Naipadala ang check-in",
   },
+  location: {
+    foregroundDenied: "Kailangan ang location permission para ma-share ang location mo sa pamilya mo.",
+    backgroundDenied: "Kailangan ang background location permission para patuloy na naka-share ang location mo kapag sarado ang app.",
+    startFailed: "Hindi nasimulan ang location sharing",
+  },
   settings: {
     title: "Settings",
     language: "Wika",

@@ -44,6 +44,11 @@ export const en = {
     imSafe: "I'm safe",
     checkInSent: "Check-in sent",
   },
+  location: {
+    foregroundDenied: "Location permission is required to share your location with your family.",
+    backgroundDenied: "Background location permission is required so your location keeps sharing while the app is closed.",
+    startFailed: "Couldn't start location sharing",
+  },
   settings: {
     title: "Settings",
     language: "Language",

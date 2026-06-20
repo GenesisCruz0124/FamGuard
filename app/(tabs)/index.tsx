@@ -52,9 +52,20 @@ export default function MapScreen() {
     if (!uid || !familyId) return;
     (async () => {
       const fg = await requestForegroundPermission();
-      if (!fg) return;
-      await requestBackgroundPermission();
-      await startBackgroundLocationUpdates();
+      if (!fg) {
+        Alert.alert(t("location.foregroundDenied"));
+        return;
+      }
+      const bg = await requestBackgroundPermission();
+      if (!bg) {
+        Alert.alert(t("location.backgroundDenied"));
+        return;
+      }
+      try {
+        await startBackgroundLocationUpdates();
+      } catch (err) {
+        Alert.alert(t("location.startFailed"), err instanceof Error ? err.message : String(err));
+      }
     })();
   }, [uid, familyId]);
 
