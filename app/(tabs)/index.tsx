@@ -28,6 +28,44 @@ function timeAgo(updatedAt: number): string {
   return `${Math.floor(seconds / 3600)}h`;
 }
 
+// Devices that are physically close (e.g. two phones on the same desk) can
+// land on the same screen pixel at low zoom, hiding every pin but the
+// topmost one. Spreads coincident/near-coincident points into a small ring
+// so each member's marker stays visible regardless of zoom level.
+const COINCIDENT_THRESHOLD_DEGREES = 0.0005; // ~50m
+const MARKER_SPREAD_DEGREES = 0.0008; // ~90m
+
+function spreadCoincidentMarkers<T extends { location: { lat: number; lng: number } | null }>(
+  members: T[]
+): (T & { markerLat: number; markerLng: number })[] {
+  const groups: T[][] = [];
+  for (const member of members) {
+    if (!member.location) continue;
+    const group = groups.find((g) => {
+      const ref = g[0].location!;
+      return (
+        Math.abs(ref.lat - member.location!.lat) < COINCIDENT_THRESHOLD_DEGREES &&
+        Math.abs(ref.lng - member.location!.lng) < COINCIDENT_THRESHOLD_DEGREES
+      );
+    });
+    if (group) group.push(member);
+    else groups.push([member]);
+  }
+
+  return groups.flatMap((group) =>
+    group.map((member, index) => {
+      const { lat, lng } = member.location!;
+      if (group.length === 1) return { ...member, markerLat: lat, markerLng: lng };
+      const angle = (2 * Math.PI * index) / group.length;
+      return {
+        ...member,
+        markerLat: lat + MARKER_SPREAD_DEGREES * Math.sin(angle),
+        markerLng: lng + MARKER_SPREAD_DEGREES * Math.cos(angle),
+      };
+    })
+  );
+}
+
 export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -87,6 +125,7 @@ export default function MapScreen() {
   }
 
   const membersWithLocation = members.filter((m) => m.member.consentGiven && m.location);
+  const markersToRender = spreadCoincidentMarkers(membersWithLocation);
 
   return (
     <View style={styles.container}>
@@ -99,11 +138,11 @@ export default function MapScreen() {
               : [121.0, 14.6]
           }
         />
-        {membersWithLocation.map((m) => (
+        {markersToRender.map((m) => (
           <MapLibreGL.PointAnnotation
             key={m.uid}
             id={m.uid}
-            coordinate={[m.location!.lng, m.location!.lat]}
+            coordinate={[m.markerLng, m.markerLat]}
             onSelected={() => router.push(`/member/${m.uid}`)}
           >
             <View style={styles.marker}>
