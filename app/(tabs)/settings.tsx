@@ -7,11 +7,13 @@ import { setAppLanguage, t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
 import { leaveFamily } from "@/lib/family";
+import { useFamily } from "@/lib/useFamilyData";
 import type { Language } from "@/types";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { uid, userDoc, signOut } = useAuth();
+  const family = useFamily(userDoc?.currentFamilyId);
   const [language, setLanguage] = useState<Language>(userDoc?.settings.language ?? "en");
 
   async function handleLanguageToggle() {
@@ -73,6 +75,13 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {family && (
+        <View style={styles.row}>
+          <Text style={styles.label}>{t("family.yourInviteCode")}</Text>
+          <Text style={styles.inviteCode}>{family.inviteCode}</Text>
+        </View>
+      )}
+
       <Pressable style={styles.row} onPress={handleTogglePause}>
         <Text style={styles.label}>
           {userDoc?.settings.sharingPaused ? t("settings.resumeSharing") : t("settings.pauseSharing")}
@@ -101,4 +110,5 @@ const styles = StyleSheet.create({
   label: { fontSize: 16 },
   dangerLabel: { fontSize: 16, color: "#dc2626" },
   languageToggle: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 },
+  inviteCode: { fontSize: 24, fontWeight: "700", letterSpacing: 4, marginTop: 8 },
 });
