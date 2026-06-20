@@ -1,8 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
 // Bump `version` and `android.versionCode` on every build per release policy.
-const VERSION = "1.1.1";
-const ANDROID_VERSION_CODE = 3;
+const VERSION = "1.2.0";
+const ANDROID_VERSION_CODE = 4;
 
 const config: ExpoConfig = {
   name: "FamGuard",
@@ -82,6 +82,8 @@ const config: ExpoConfig = {
   },
   extra: {
     googleSignInWebClientId: process.env.GOOGLE_SIGNIN_WEB_CLIENT_ID ?? "",
+    appVersion: VERSION,
+    androidVersionCode: ANDROID_VERSION_CODE,
   },
 };
 

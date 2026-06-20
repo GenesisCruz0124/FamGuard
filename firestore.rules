@@ -27,11 +27,34 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberUids"]);
     }
 
+    // A code starts unclaimed (deviceId == null); the first device to
+    // claim it locks it permanently to that device. Re-claims by the SAME
+    // device (e.g. reinstall, re-login) are still allowed.
+    function isUnclaimedOrOwnDevice(codeId) {
+      let code = get(/databases/$(database)/documents/activationCodes/$(codeId)).data;
+      return code.deviceId == null || code.deviceId == request.resource.data.deviceId;
+    }
+
     match /users/{uid} {
+      // trialStartedAt and activation.* live on this same doc; no extra
+      // rules needed since they're just additional self-owned fields.
       allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if isSignedIn() && request.auth.uid == uid;
       allow delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Activation codes are created manually via Firebase Console by the
+    // developer — no client ever creates one. Reading requires already
+    // knowing the exact code string (get-by-ID, not list-able), the same
+    // reasoning already used for the family invite-code read above.
+    match /activationCodes/{codeId} {
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() &&
+        request.resource.data.boundUid == request.auth.uid &&
+        isUnclaimedOrOwnDevice(codeId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["deviceId", "boundUid", "usedAt"]);
+      allow create, delete: if false;
     }
 
     match /families/{familyId} {

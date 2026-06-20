@@ -66,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: result.user.email ?? "",
         photoURL: result.user.photoURL ?? undefined,
         settings: { language: "en", sharingPaused: false },
+        trialStartedAt: Date.now(),
+        activation: { activated: false },
       };
       await userRef.set(newUser);
     }

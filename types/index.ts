@@ -10,6 +10,21 @@ export interface UserDoc {
     sharingPaused: boolean;
   };
   currentFamilyId?: string;
+  trialStartedAt?: number;
+  activation?: {
+    activated: boolean;
+    deviceId?: string;
+    code?: string;
+    activatedAt?: number;
+  };
+}
+
+export interface ActivationCodeDoc {
+  deviceId: string | null;
+  boundUid: string | null;
+  usedAt: number | null;
+  createdAt: number;
+  note?: string;
 }
 
 export interface FamilyDoc {

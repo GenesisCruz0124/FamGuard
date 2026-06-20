@@ -5,6 +5,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "@/i18n";
+import { isGatedFeatureBlocked, trialDaysRemaining } from "@/lib/activation";
 import { useAuth } from "@/lib/auth";
 import {
   requestBackgroundPermission,
@@ -73,6 +74,7 @@ export default function MapScreen() {
   const familyId = userDoc?.currentFamilyId;
   const members = useLiveMembers(familyId);
   const sharingPaused = userDoc?.settings.sharingPaused ?? false;
+  const activationBlocked = isGatedFeatureBlocked(userDoc);
 
   useEffect(() => {
     setCurrentUid(uid ?? null);
@@ -88,6 +90,7 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (!uid || !familyId) return;
+    if (activationBlocked) return;
     (async () => {
       const fg = await requestForegroundPermission();
       if (!fg) {
@@ -105,7 +108,7 @@ export default function MapScreen() {
         Alert.alert(t("location.startFailed"), err instanceof Error ? err.message : String(err));
       }
     })();
-  }, [uid, familyId]);
+  }, [uid, familyId, activationBlocked]);
 
   async function togglePause() {
     if (!uid) return;
@@ -114,12 +117,20 @@ export default function MapScreen() {
 
   async function handleSos() {
     if (!uid || !familyId) return;
+    if (activationBlocked) {
+      Alert.alert(t("activation.blockedTitle"), t("activation.blockedBody"));
+      return;
+    }
     await recordFamilyEvent(familyId, { type: "sos", uid });
     Alert.alert(t("sos.sent"));
   }
 
   async function handleCheckIn() {
     if (!uid || !familyId) return;
+    if (activationBlocked) {
+      Alert.alert(t("activation.blockedTitle"), t("activation.blockedBody"));
+      return;
+    }
     await recordFamilyEvent(familyId, { type: "checkin", uid });
     Alert.alert(t("sos.checkInSent"));
   }
@@ -162,6 +173,24 @@ export default function MapScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {activationBlocked ? (
+        <View style={[styles.banner, styles.trialBannerBlocked, { top: insets.top + 76 }]}>
+          <Text style={styles.bannerText}>{t("activation.trialExpiredBanner")}</Text>
+          <Pressable onPress={() => router.push("/(tabs)/settings")} style={styles.bannerButton}>
+            <Text style={styles.bannerButtonText}>{t("activation.enterCode")}</Text>
+          </Pressable>
+        </View>
+      ) : (
+        !userDoc?.activation?.activated &&
+        trialDaysRemaining(userDoc?.trialStartedAt) <= 3 && (
+          <View style={[styles.banner, { top: insets.top + 76 }]}>
+            <Text style={styles.bannerText}>
+              {t("activation.trialDaysLeft", { days: trialDaysRemaining(userDoc?.trialStartedAt) })}
+            </Text>
+          </View>
+        )
+      )}
 
       <View style={styles.actions}>
         <Pressable style={styles.sosButton} onPress={handleSos}>
@@ -219,6 +248,7 @@ const styles = StyleSheet.create({
   bannerText: { fontSize: 13, fontWeight: "600", flex: 1 },
   bannerButton: { backgroundColor: "#2563eb", borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10 },
   bannerButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  trialBannerBlocked: { backgroundColor: "#fef2f2" },
   actions: { position: "absolute", bottom: 140, right: 16, gap: 12 },
   sosButton: { backgroundColor: "#dc2626", borderRadius: 999, padding: 16, alignItems: "center" },
   sosButtonText: { color: "#fff", fontWeight: "700" },
