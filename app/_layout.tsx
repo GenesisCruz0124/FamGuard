@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAppGate } from '@/hooks/useAppGate';
@@ -47,8 +48,10 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <GatedNavigator />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <GatedNavigator />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

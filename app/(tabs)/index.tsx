@@ -2,6 +2,7 @@ import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
@@ -29,6 +30,7 @@ function timeAgo(updatedAt: number): string {
 
 export default function MapScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { uid, userDoc } = useAuth();
   const familyId = userDoc?.currentFamilyId;
   const members = useLiveMembers(familyId);
@@ -100,7 +102,7 @@ export default function MapScreen() {
         ))}
       </MapLibreGL.MapView>
 
-      <View style={styles.banner}>
+      <View style={[styles.banner, { top: insets.top + 16 }]}>
         <Text style={styles.bannerText}>
           {sharingPaused ? t("map.resumeSharing") : t("map.sharingBanner")}
         </Text>
@@ -151,7 +153,6 @@ const styles = StyleSheet.create({
   markerText: { color: "#fff", fontWeight: "700" },
   banner: {
     position: "absolute",
-    top: 16,
     left: 16,
     right: 16,
     backgroundColor: "#fff",
