@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { setAppLanguage, t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
@@ -60,7 +61,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <Text style={styles.title}>{t("settings.title")}</Text>
 
       <View style={styles.row}>
@@ -89,7 +90,7 @@ export default function SettingsScreen() {
       <Pressable style={styles.row} onPress={signOut}>
         <Text style={styles.label}>{t("settings.signOut")}</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 

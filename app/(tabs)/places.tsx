@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
@@ -42,7 +43,7 @@ export default function PlacesScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <FlatList
         data={places}
         keyExtractor={(item) => item.id}
@@ -73,7 +74,7 @@ export default function PlacesScreen() {
           <Text style={styles.buttonText}>{t("places.save")}</Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
