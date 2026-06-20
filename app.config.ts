@@ -1,8 +1,8 @@
 import type { ExpoConfig } from "expo/config";
 
 // Bump `version` and `android.versionCode` on every build per release policy.
-const VERSION = "1.1.0";
-const ANDROID_VERSION_CODE = 2;
+const VERSION = "1.1.1";
+const ANDROID_VERSION_CODE = 3;
 
 const config: ExpoConfig = {
   name: "FamGuard",
