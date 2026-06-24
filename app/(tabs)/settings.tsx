@@ -5,7 +5,7 @@ import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { setAppLanguage, t } from "@/i18n";
-import { redeemActivationCode } from "@/lib/activation";
+import { redeemActivationCode, trialDaysRemaining } from "@/lib/activation";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
 import { leaveFamily } from "@/lib/family";
@@ -127,6 +127,9 @@ export default function SettingsScreen() {
         </View>
       ) : (
         <View style={styles.row}>
+          <Text style={styles.label}>
+            {t("activation.trialDaysLeft", { days: trialDaysRemaining(userDoc?.trialStartedAt) })}
+          </Text>
           <Text style={styles.label}>{t("activation.enterCodeLabel")}</Text>
           <View style={styles.activationRow}>
             <TextInput
