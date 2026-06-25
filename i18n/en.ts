@@ -9,6 +9,8 @@ export const en = {
   auth: {
     signInWithGoogle: "Sign in with Google",
     signingIn: "Signing in...",
+    tagline: "Stay connected and keep your family safe, wherever they are.",
+    privacyNote: "We only share your location with your family group. You're in control.",
   },
   family: {
     createFamily: "Create a family",
@@ -19,6 +21,7 @@ export const en = {
     join: "Join",
     members: "Members",
     yourInviteCode: "Your invite code",
+    or: "OR",
   },
   map: {
     sharingBanner: "Your location is being shared",
@@ -26,6 +29,7 @@ export const en = {
     resumeSharing: "Resume sharing",
     lastSeen: "Last seen {{time}} ago",
     battery: "Battery {{level}}%",
+    noMembersSharing: "No family members are sharing their location yet.",
   },
   places: {
     title: "Places",
@@ -51,6 +55,10 @@ export const en = {
   },
   settings: {
     title: "Settings",
+    sectionGeneral: "General",
+    sectionFamily: "Family",
+    sectionPlan: "Plan & activation",
+    sectionAccount: "Account",
     language: "Language",
     english: "English",
     taglish: "Taglish",

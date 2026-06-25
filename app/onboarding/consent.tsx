@@ -1,9 +1,14 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { setConsentGiven } from "@/lib/consent";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { colors, spacing, typography } from "@/constants/theme";
 import { t } from "@/i18n";
+import { setConsentGiven } from "@/lib/consent";
 
 export default function ConsentScreen() {
   const router = useRouter();
@@ -16,33 +21,42 @@ export default function ConsentScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.icon}>
+        <Ionicons name="location" size={36} color={colors.primary} />
+      </View>
       <Text style={styles.title}>{t("onboarding.welcomeTitle")}</Text>
       <Text style={styles.body}>{t("onboarding.welcomeBody")}</Text>
 
-      <View style={styles.consentRow}>
-        <Switch value={consented} onValueChange={setConsented} />
-        <Text style={styles.consentLabel}>{t("onboarding.consentLabel")}</Text>
-      </View>
+      <Card style={styles.consentCard}>
+        <Pressable style={styles.consentRow} onPress={() => setConsented((v) => !v)}>
+          <Switch value={consented} onValueChange={setConsented} trackColor={{ true: colors.primary }} />
+          <Text style={styles.consentLabel}>{t("onboarding.consentLabel")}</Text>
+        </Pressable>
+      </Card>
 
-      <Pressable
-        style={[styles.button, !consented && styles.buttonDisabled]}
-        disabled={!consented}
-        onPress={handleContinue}
-      >
-        <Text style={styles.buttonText}>{t("onboarding.continue")}</Text>
-      </Pressable>
-    </View>
+      <View style={styles.footer}>
+        <Button label={t("onboarding.continue")} onPress={handleContinue} disabled={!consented} size="lg" />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, gap: 24 },
-  title: { fontSize: 28, fontWeight: "700" },
-  body: { fontSize: 16, lineHeight: 22, color: "#444" },
-  consentRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  consentLabel: { flex: 1, fontSize: 15 },
-  button: { backgroundColor: "#2563eb", borderRadius: 12, padding: 16, alignItems: "center" },
-  buttonDisabled: { backgroundColor: "#94a3b8" },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.xl, gap: spacing.lg },
+  icon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.xl,
+  },
+  title: { ...typography.title },
+  body: { ...typography.body, lineHeight: 22, color: colors.textMuted },
+  consentCard: { marginTop: spacing.sm },
+  consentRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  consentLabel: { flex: 1, fontSize: 15, color: colors.text },
+  footer: { marginTop: "auto", paddingBottom: spacing.lg },
 });

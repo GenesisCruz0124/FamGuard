@@ -11,6 +11,8 @@ export const tl: TranslationKeys = {
   auth: {
     signInWithGoogle: "Mag-sign in gamit ang Google",
     signingIn: "Nag-sign in...",
+    tagline: "Manatiling connected at panatilihing safe ang pamilya mo, saan man sila.",
+    privacyNote: "Ang location mo ay shared lang sa pamilya mo. Ikaw ang may kontrol.",
   },
   family: {
     createFamily: "Gumawa ng pamilya",
@@ -21,6 +23,7 @@ export const tl: TranslationKeys = {
     join: "Sumali",
     members: "Mga kasapi",
     yourInviteCode: "Ang invite code mo",
+    or: "O",
   },
   map: {
     sharingBanner: "Naka-share ang location mo ngayon",
@@ -28,6 +31,7 @@ export const tl: TranslationKeys = {
     resumeSharing: "Ituloy ang sharing",
     lastSeen: "Huling nakita {{time}} ang nakaraan",
     battery: "Baterya {{level}}%",
+    noMembersSharing: "Walang kasapi ng pamilya na nag-share ng location pa.",
   },
   places: {
     title: "Mga lugar",
@@ -53,6 +57,10 @@ export const tl: TranslationKeys = {
   },
   settings: {
     title: "Settings",
+    sectionGeneral: "Pangkalahatan",
+    sectionFamily: "Pamilya",
+    sectionPlan: "Plan & activation",
+    sectionAccount: "Account",
     language: "Wika",
     english: "English",
     taglish: "Taglish",
