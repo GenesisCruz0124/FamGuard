@@ -37,6 +37,7 @@ export const en = {
     placeName: "Place name",
     radius: "Radius (meters)",
     save: "Save",
+    noPlaces: "No places saved yet. Add a place below.",
   },
   member: {
     detail: "Member detail",

@@ -1,12 +1,16 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Location from "expo-location";
 import { useState } from "react";
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { colors, radius, spacing, typography } from "@/constants/theme";
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { addPlace } from "@/lib/places";
 import { usePlaces } from "@/lib/useFamilyData";
-import * as Location from "expo-location";
 
 export default function PlacesScreen() {
   const { userDoc, uid } = useAuth();
@@ -14,7 +18,7 @@ export default function PlacesScreen() {
   const places = usePlaces(familyId);
 
   const [name, setName] = useState("");
-  const [radius, setRadius] = useState("150");
+  const [radiusMeters, setRadiusMeters] = useState("150");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleAddPlace() {
@@ -31,10 +35,11 @@ export default function PlacesScreen() {
         name: name.trim(),
         lat: current.coords.latitude,
         lng: current.coords.longitude,
-        radiusMeters: Number(radius) || 150,
+        radiusMeters: Number(radiusMeters) || 150,
         createdBy: uid,
       });
       setName("");
+      setRadiusMeters("150");
     } catch (err) {
       Alert.alert("Couldn't add place", err instanceof Error ? err.message : String(err));
     } finally {
@@ -47,45 +52,84 @@ export default function PlacesScreen() {
       <FlatList
         data={places}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={<Text style={styles.header}>{t("places.title")}</Text>}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <Text style={styles.title}>{t("places.title")}</Text>
+        }
+        ListEmptyComponent={
+          <Text style={styles.empty}>{t("places.noPlaces")}</Text>
+        }
         renderItem={({ item }) => (
-          <View style={styles.placeRow}>
-            <Text style={styles.placeName}>{item.data.name}</Text>
-            <Text style={styles.placeMeta}>{item.data.radiusMeters}m radius</Text>
-          </View>
+          <Card style={styles.placeCard}>
+            <View style={styles.placeRow}>
+              <View style={styles.placeIcon}>
+                <Ionicons name="location" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.placeInfo}>
+                <Text style={styles.placeName}>{item.data.name}</Text>
+                <Text style={styles.placeMeta}>{item.data.radiusMeters}m radius</Text>
+              </View>
+            </View>
+          </Card>
         )}
       />
 
-      <View style={styles.form}>
+      <Card style={styles.form}>
+        <Text style={styles.formTitle}>{t("places.addPlace")}</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
           placeholder={t("places.placeName")}
+          placeholderTextColor={colors.disabled}
         />
         <TextInput
           style={styles.input}
-          value={radius}
-          onChangeText={setRadius}
+          value={radiusMeters}
+          onChangeText={setRadiusMeters}
           placeholder={t("places.radius")}
+          placeholderTextColor={colors.disabled}
           keyboardType="numeric"
         />
-        <Pressable style={styles.button} onPress={handleAddPlace} disabled={submitting || !name.trim()}>
-          <Text style={styles.buttonText}>{t("places.save")}</Text>
-        </Pressable>
-      </View>
+        <Button
+          label={t("places.save")}
+          onPress={handleAddPlace}
+          disabled={submitting || !name.trim()}
+          loading={submitting}
+          icon="add-circle-outline"
+        />
+      </Card>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  header: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  placeRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  placeName: { fontSize: 16, fontWeight: "600" },
-  placeMeta: { fontSize: 12, color: "#666" },
-  form: { gap: 10, paddingTop: 16 },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, padding: 12 },
-  button: { backgroundColor: "#2563eb", borderRadius: 12, padding: 14, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  container: { flex: 1, backgroundColor: colors.background },
+  list: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl },
+  title: { ...typography.title, marginBottom: spacing.sm },
+  empty: { ...typography.caption, textAlign: "center", paddingVertical: spacing.xl },
+  placeCard: { padding: spacing.sm },
+  placeRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  placeIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeInfo: { flex: 1 },
+  placeName: { ...typography.body, fontWeight: "600" },
+  placeMeta: { ...typography.caption, marginTop: 2 },
+  form: { margin: spacing.lg, gap: spacing.md },
+  formTitle: { ...typography.sectionLabel },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: 16,
+    backgroundColor: colors.surface,
+    color: colors.text,
+  },
 });

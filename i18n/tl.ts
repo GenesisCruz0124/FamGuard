@@ -39,6 +39,7 @@ export const tl: TranslationKeys = {
     placeName: "Pangalan ng lugar",
     radius: "Radius (metro)",
     save: "I-save",
+    noPlaces: "Wala pang nakalista na lugar. Magdagdag sa ibaba.",
   },
   member: {
     detail: "Detalye ng kasapi",
