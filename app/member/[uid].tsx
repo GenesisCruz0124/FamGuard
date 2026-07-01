@@ -1,10 +1,12 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useLocalSearchParams } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
+import { useState } from "react";
+
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
 import { useLocationHistory } from "@/lib/useLocationHistory";
@@ -60,6 +62,7 @@ export default function MemberDetailScreen() {
   const trailPoints = useLocationHistory(userDoc?.currentFamilyId, memberUid);
   // oldest→newest for the map; newest→oldest for the list
   const trailNewestFirst = [...trailPoints].reverse();
+  const [mapExpanded, setMapExpanded] = useState(false);
 
   const trailGeoJSON = trailPoints.length >= 2
     ? {
@@ -99,46 +102,79 @@ export default function MemberDetailScreen() {
 
       {/* Mini trail map */}
       {trailPoints.length >= 2 && latestPoint ? (
-        <View style={styles.mapCard}>
-          <MapLibreGL.MapView style={styles.map} mapStyle={MAP_STYLE_URL} scrollEnabled={false} zoomEnabled={false}>
-            <MapLibreGL.Camera
-              zoomLevel={14}
-              centerCoordinate={[latestPoint.lng, latestPoint.lat]}
-              animationDuration={0}
-            />
-            <MapLibreGL.ShapeSource id="trail" shape={trailGeoJSON!}>
-              <MapLibreGL.LineLayer
-                id="trailLine"
-                style={{ lineColor: colors.primary, lineWidth: 3, lineOpacity: 0.85 }}
+        <>
+          <View style={styles.mapCard}>
+            <MapLibreGL.MapView style={styles.map} mapStyle={MAP_STYLE_URL} scrollEnabled={false} zoomEnabled={false}>
+              <MapLibreGL.Camera
+                zoomLevel={14}
+                centerCoordinate={[latestPoint.lng, latestPoint.lat]}
+                animationDuration={0}
               />
-            </MapLibreGL.ShapeSource>
-            {/* Start marker */}
-            <MapLibreGL.PointAnnotation
-              id="start"
-              coordinate={[trailPoints[0].lng, trailPoints[0].lat]}
-            >
-              <View style={styles.dotStart} />
-            </MapLibreGL.PointAnnotation>
-            {/* End / current marker */}
-            <MapLibreGL.PointAnnotation
-              id="end"
-              coordinate={[latestPoint.lng, latestPoint.lat]}
-            >
-              <View style={styles.dotEnd} />
-            </MapLibreGL.PointAnnotation>
-          </MapLibreGL.MapView>
-          <View style={styles.mapLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.textMuted }]} />
-              <Text style={styles.legendText}>Start</Text>
+              <MapLibreGL.ShapeSource id="trail" shape={trailGeoJSON!}>
+                <MapLibreGL.LineLayer
+                  id="trailLine"
+                  style={{ lineColor: colors.primary, lineWidth: 3, lineOpacity: 0.85 }}
+                />
+              </MapLibreGL.ShapeSource>
+              <MapLibreGL.PointAnnotation id="start" coordinate={[trailPoints[0].lng, trailPoints[0].lat]}>
+                <View style={styles.dotStart} />
+              </MapLibreGL.PointAnnotation>
+              <MapLibreGL.PointAnnotation id="end" coordinate={[latestPoint.lng, latestPoint.lat]}>
+                <View style={styles.dotEnd} />
+              </MapLibreGL.PointAnnotation>
+            </MapLibreGL.MapView>
+            {/* Expand button overlay */}
+            <Pressable style={styles.expandBtn} onPress={() => setMapExpanded(true)}>
+              <Ionicons name="expand-outline" size={20} color="#fff" />
+            </Pressable>
+            <View style={styles.mapLegend}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.textMuted }]} />
+                <Text style={styles.legendText}>Start</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                <Text style={styles.legendText}>Current</Text>
+              </View>
+              <Text style={styles.legendCount}>{trailPoints.length} points · last 24h</Text>
             </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
-              <Text style={styles.legendText}>Current</Text>
-            </View>
-            <Text style={styles.legendCount}>{trailPoints.length} points · last 24h</Text>
           </View>
-        </View>
+
+          {/* Full-screen map modal */}
+          <Modal visible={mapExpanded} animationType="slide" statusBarTranslucent onRequestClose={() => setMapExpanded(false)}>
+            <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+            <View style={styles.fullMapContainer}>
+              <MapLibreGL.MapView style={styles.fullMap} mapStyle={MAP_STYLE_URL}>
+                <MapLibreGL.Camera
+                  zoomLevel={14}
+                  centerCoordinate={[latestPoint.lng, latestPoint.lat]}
+                  animationDuration={0}
+                />
+                <MapLibreGL.ShapeSource id="trailFull" shape={trailGeoJSON!}>
+                  <MapLibreGL.LineLayer
+                    id="trailLineFull"
+                    style={{ lineColor: colors.primary, lineWidth: 4, lineOpacity: 0.9 }}
+                  />
+                </MapLibreGL.ShapeSource>
+                <MapLibreGL.PointAnnotation id="startFull" coordinate={[trailPoints[0].lng, trailPoints[0].lat]}>
+                  <View style={styles.dotStart} />
+                </MapLibreGL.PointAnnotation>
+                <MapLibreGL.PointAnnotation id="endFull" coordinate={[latestPoint.lng, latestPoint.lat]}>
+                  <View style={styles.dotEnd} />
+                </MapLibreGL.PointAnnotation>
+              </MapLibreGL.MapView>
+              {/* Close button */}
+              <Pressable style={styles.closeBtn} onPress={() => setMapExpanded(false)}>
+                <Ionicons name="close" size={22} color="#fff" />
+              </Pressable>
+              {/* Name label */}
+              <View style={styles.fullMapLabel}>
+                <Text style={styles.fullMapLabelText}>{member.user?.displayName ?? "Member"} · trail</Text>
+                <Text style={styles.fullMapLabelSub}>{trailPoints.length} points · last 24h · pinch to zoom</Text>
+              </View>
+            </View>
+          </Modal>
+        </>
       ) : null}
 
       {/* Trail list */}
@@ -192,6 +228,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   map: { height: 180 },
+  expandBtn: {
+    position: "absolute",
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: radius.sm,
+    padding: spacing.xs,
+  },
+  fullMapContainer: { flex: 1, backgroundColor: "#000" },
+  fullMap: { flex: 1 },
+  closeBtn: {
+    position: "absolute",
+    top: 48,
+    right: spacing.lg,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: radius.pill,
+    padding: spacing.sm,
+  },
+  fullMapLabel: {
+    position: "absolute",
+    bottom: 40,
+    left: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  fullMapLabelText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  fullMapLabelSub: { color: "rgba(255,255,255,0.75)", fontSize: 12, marginTop: 2 },
   mapLegend: {
     flexDirection: "row",
     alignItems: "center",
