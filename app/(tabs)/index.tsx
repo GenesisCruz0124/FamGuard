@@ -149,6 +149,8 @@ export default function MapScreen() {
 
   const membersWithLocation = members.filter((m) => m.member.consentGiven && m.location);
   const markersToRender = spreadCoincidentMarkers(membersWithLocation);
+  // All members shown in list; only those actively sharing shown on map
+  const allMembers = members;
 
   return (
     <View style={styles.container}>
@@ -239,24 +241,31 @@ export default function MapScreen() {
 
       <View style={styles.memberList}>
         <View style={styles.memberListHandle} />
-        {membersWithLocation.length === 0 ? (
+        {allMembers.length === 0 ? (
           <Text style={styles.emptyState}>{t("map.noMembersSharing")}</Text>
         ) : (
-          membersWithLocation.map((m) => (
-            <Pressable key={m.uid} style={styles.memberRow} onPress={() => router.push(`/member/${m.uid}`)}>
-              <View style={styles.memberAvatar}>
-                <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{m.user?.displayName ?? "Member"}</Text>
-                <Text style={styles.memberMeta}>
-                  {t("map.battery", { level: m.location?.batteryLevel ?? "?" })} ·{" "}
-                  {t("map.lastSeen", { time: timeAgo(m.location!.updatedAt) })}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-            </Pressable>
-          ))
+          allMembers.map((m) => {
+            const isSharing = m.member.consentGiven && m.location;
+            return (
+              <Pressable key={m.uid} style={styles.memberRow} onPress={() => router.push(`/member/${m.uid}`)}>
+                <View style={[styles.memberAvatar, !isSharing && styles.memberAvatarMuted]}>
+                  <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
+                </View>
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>{m.user?.displayName ?? "Member"}</Text>
+                  {isSharing ? (
+                    <Text style={styles.memberMeta}>
+                      {t("map.battery", { level: m.location!.batteryLevel ?? "?" })} ·{" "}
+                      {t("map.lastSeen", { time: timeAgo(m.location!.updatedAt) })}
+                    </Text>
+                  ) : (
+                    <Text style={styles.memberMetaMuted}>Not sharing location</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            );
+          })
         )}
       </View>
     </View>
@@ -346,4 +355,6 @@ const styles = StyleSheet.create({
   memberInfo: { flex: 1 },
   memberName: { fontWeight: "600", color: colors.text },
   memberMeta: { ...typography.caption, marginTop: 2 },
+  memberMetaMuted: { ...typography.caption, marginTop: 2, color: colors.disabled, fontStyle: "italic" },
+  memberAvatarMuted: { backgroundColor: colors.border },
 });
