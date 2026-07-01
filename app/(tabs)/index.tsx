@@ -86,6 +86,7 @@ export default function MapScreen() {
   const sharingPaused = userDoc?.settings.sharingPaused ?? false;
   const activationBlocked = isGatedFeatureBlocked(userDoc);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const [panelCollapsed, setPanelCollapsed] = useState(false);
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
 
   useEffect(() => {
@@ -229,7 +230,15 @@ export default function MapScreen() {
       )}
 
       <View style={[styles.memberList, { paddingBottom: insets.bottom + spacing.sm }]}>
-        <View style={styles.memberListHandle} />
+        <Pressable style={styles.memberListHandleRow} onPress={() => setPanelCollapsed((v) => !v)}>
+          <View style={styles.memberListHandle} />
+          <Ionicons
+            name={panelCollapsed ? "chevron-up" : "chevron-down"}
+            size={14}
+            color={colors.disabled}
+            style={styles.handleChevron}
+          />
+        </Pressable>
         <View style={styles.actionsRow}>
           <Pressable style={styles.sosButton} onPress={handleSos}>
             <Ionicons name="warning" size={20} color="#fff" />
@@ -240,7 +249,7 @@ export default function MapScreen() {
             <Text style={styles.checkInButtonText}>{t("sos.imSafe")}</Text>
           </Pressable>
         </View>
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.memberScroll}>
+        {!panelCollapsed && <ScrollView showsVerticalScrollIndicator={false} style={styles.memberScroll}>
           {allMembers.length === 0 ? (
             <Text style={styles.emptyState}>{t("map.noMembersSharing")}</Text>
           ) : (
@@ -267,7 +276,7 @@ export default function MapScreen() {
               );
             })
           )}
-        </ScrollView>
+        </ScrollView>}
       </View>
     </View>
   );
@@ -350,7 +359,9 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   memberScroll: { flexGrow: 0 },
-  memberListHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: spacing.sm },
+  memberListHandleRow: { alignItems: "center", paddingVertical: spacing.xs },
+  memberListHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border },
+  handleChevron: { marginTop: 2 },
   emptyState: { ...typography.caption, textAlign: "center", paddingVertical: spacing.md },
   memberRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm + 2 },
   memberAvatar: {
