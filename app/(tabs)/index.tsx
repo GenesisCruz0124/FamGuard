@@ -1,13 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
 import { t } from "@/i18n";
 import { isGatedFeatureBlocked, trialDaysRemaining } from "@/lib/activation";
+import { useLocationHistory } from "@/lib/useLocationHistory";
 import { useAuth } from "@/lib/auth";
 import {
   requestBackgroundPermission,
@@ -29,6 +30,13 @@ function timeAgo(updatedAt: number): string {
   if (seconds < 60) return `${seconds}s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
   return `${Math.floor(seconds / 3600)}h`;
+}
+
+const TRAIL_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
+
+function memberColor(uid: string, allUids: string[]): string {
+  const idx = allUids.indexOf(uid);
+  return TRAIL_COLORS[(idx >= 0 ? idx : 0) % TRAIL_COLORS.length];
 }
 
 // Devices that are physically close (e.g. two phones on the same desk) can
@@ -77,6 +85,8 @@ export default function MapScreen() {
   const members = useLiveMembers(familyId);
   const sharingPaused = userDoc?.settings.sharingPaused ?? false;
   const activationBlocked = isGatedFeatureBlocked(userDoc);
+  const [selectedUid, setSelectedUid] = useState<string | null>(null);
+  const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
 
   useEffect(() => {
     setCurrentUid(uid ?? null);
@@ -151,12 +161,27 @@ export default function MapScreen() {
               : [121.0, 14.6]
           }
         />
+        {trailPoints.length >= 2 && selectedUid && (
+          <MapLibreGL.ShapeSource
+            id="trail"
+            shape={{
+              type: "Feature",
+              geometry: { type: "LineString", coordinates: trailPoints.map((p) => [p.lng, p.lat]) },
+              properties: {},
+            }}
+          >
+            <MapLibreGL.LineLayer
+              id="trailLine"
+              style={{ lineColor: memberColor(selectedUid, markersToRender.map((m) => m.uid)), lineWidth: 3, lineOpacity: 0.8 }}
+            />
+          </MapLibreGL.ShapeSource>
+        )}
         {markersToRender.map((m) => (
           <MapLibreGL.PointAnnotation
             key={m.uid}
             id={m.uid}
             coordinate={[m.markerLng, m.markerLat]}
-            onSelected={() => router.push(`/member/${m.uid}`)}
+            onSelected={() => { setSelectedUid(m.uid); router.push(`/member/${m.uid}`); }}
           >
             <View style={styles.marker}>
               <Text style={styles.markerText}>{(m.user?.displayName ?? "?")[0]}</Text>

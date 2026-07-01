@@ -93,6 +93,11 @@ service cloud.firestore {
         allow write: if isSignedIn() && request.auth.uid == uid && isFamilyMember(familyId);
       }
 
+      match /locationHistory/{uid}/points/{pointId} {
+        allow write: if isSignedIn() && request.auth.uid == uid && isFamilyMember(familyId);
+        allow read:  if isFamilyMember(familyId) && memberConsented(familyId, uid);
+      }
+
       match /places/{placeId} {
         allow read: if isFamilyMember(familyId);
         allow create: if isFamilyMember(familyId) && request.resource.data.createdBy == request.auth.uid;

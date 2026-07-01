@@ -43,6 +43,7 @@ export const tl: TranslationKeys = {
   member: {
     detail: "Detalye ng kasapi",
     recentTrail: "Kamakailang ruta",
+    noTrailYet: "Wala pang naitalang ruta. Lalabas dito ang mga puntos ng lokasyon habang gumagalaw ang kasapi.",
   },
   sos: {
     button: "SOS",

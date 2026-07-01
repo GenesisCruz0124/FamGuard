@@ -41,6 +41,7 @@ export const en = {
   member: {
     detail: "Member detail",
     recentTrail: "Recent trail",
+    noTrailYet: "No trail recorded yet. Location points will appear here as the member moves.",
   },
   sos: {
     button: "SOS",

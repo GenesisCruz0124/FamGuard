@@ -53,10 +53,31 @@ export async function writeLiveLocation(location: Location.LocationObject) {
     .doc(uid)
     .set(doc, { merge: true });
 
+  await appendHistoryPoint(familyId, uid, doc.lat, doc.lng);
+
   const { checkGeofences } = await import("./places");
   const placesSnap = await db.collection("families").doc(familyId).collection("places").get();
   const places = placesSnap.docs.map((d) => ({ id: d.id, data: d.data() as import("@/types").PlaceDoc }));
   await checkGeofences(familyId, uid, doc.lat, doc.lng, places);
+}
+
+async function appendHistoryPoint(familyId: string, uid: string, lat: number, lng: number) {
+  const pointsRef = db
+    .collection("families")
+    .doc(familyId)
+    .collection("locationHistory")
+    .doc(uid)
+    .collection("points");
+
+  await pointsRef.add({ lat, lng, updatedAt: Date.now() });
+
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const stale = await pointsRef.where("updatedAt", "<", cutoff).limit(10).get();
+  if (!stale.empty) {
+    const batch = db.batch();
+    stale.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
 }
 
 export async function requestForegroundPermission() {

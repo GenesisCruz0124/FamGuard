@@ -64,6 +64,12 @@ export interface PlaceDoc {
   createdBy: string;
 }
 
+export interface LocationHistoryPoint {
+  lat: number;
+  lng: number;
+  updatedAt: number;
+}
+
 export type FamilyEventType = "geofence_enter" | "geofence_exit" | "sos" | "checkin";
 
 export interface FamilyEventDoc {
