@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
@@ -228,45 +228,46 @@ export default function MapScreen() {
         )
       )}
 
-      <View style={styles.actions}>
-        <Pressable style={styles.sosButton} onPress={handleSos}>
-          <Ionicons name="warning" size={22} color="#fff" />
-          <Text style={styles.sosButtonText}>{t("sos.button")}</Text>
-        </Pressable>
-        <Pressable style={styles.checkInButton} onPress={handleCheckIn}>
-          <Ionicons name="checkmark-circle" size={22} color="#fff" />
-          <Text style={styles.checkInButtonText}>{t("sos.imSafe")}</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.memberList}>
+      <View style={[styles.memberList, { paddingBottom: insets.bottom + spacing.sm }]}>
         <View style={styles.memberListHandle} />
-        {allMembers.length === 0 ? (
-          <Text style={styles.emptyState}>{t("map.noMembersSharing")}</Text>
-        ) : (
-          allMembers.map((m) => {
-            const isSharing = m.member.consentGiven && m.location;
-            return (
-              <Pressable key={m.uid} style={styles.memberRow} onPress={() => router.push(`/member/${m.uid}`)}>
-                <View style={[styles.memberAvatar, !isSharing && styles.memberAvatarMuted]}>
-                  <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
-                </View>
-                <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>{m.user?.displayName ?? "Member"}</Text>
-                  {isSharing ? (
-                    <Text style={styles.memberMeta}>
-                      {t("map.battery", { level: m.location!.batteryLevel ?? "?" })} ·{" "}
-                      {t("map.lastSeen", { time: timeAgo(m.location!.updatedAt) })}
-                    </Text>
-                  ) : (
-                    <Text style={styles.memberMetaMuted}>Not sharing location</Text>
-                  )}
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-              </Pressable>
-            );
-          })
-        )}
+        <View style={styles.actionsRow}>
+          <Pressable style={styles.sosButton} onPress={handleSos}>
+            <Ionicons name="warning" size={20} color="#fff" />
+            <Text style={styles.sosButtonText}>{t("sos.button")}</Text>
+          </Pressable>
+          <Pressable style={styles.checkInButton} onPress={handleCheckIn}>
+            <Ionicons name="checkmark-circle" size={20} color="#fff" />
+            <Text style={styles.checkInButtonText}>{t("sos.imSafe")}</Text>
+          </Pressable>
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.memberScroll}>
+          {allMembers.length === 0 ? (
+            <Text style={styles.emptyState}>{t("map.noMembersSharing")}</Text>
+          ) : (
+            allMembers.map((m) => {
+              const isSharing = m.member.consentGiven && m.location;
+              return (
+                <Pressable key={m.uid} style={styles.memberRow} onPress={() => router.push(`/member/${m.uid}`)}>
+                  <View style={[styles.memberAvatar, !isSharing && styles.memberAvatarMuted]}>
+                    <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>{m.user?.displayName ?? "Member"}</Text>
+                    {isSharing ? (
+                      <Text style={styles.memberMeta}>
+                        {t("map.battery", { level: m.location!.batteryLevel ?? "?" })} ·{" "}
+                        {t("map.lastSeen", { time: timeAgo(m.location!.updatedAt) })}
+                      </Text>
+                    ) : (
+                      <Text style={styles.memberMetaMuted}>Not sharing location</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </Pressable>
+              );
+            })
+          )}
+        </ScrollView>
       </View>
     </View>
   );
@@ -304,42 +305,51 @@ const styles = StyleSheet.create({
   trialBannerBlocked: { backgroundColor: colors.dangerSoft },
   trialBannerTextBlocked: { color: colors.danger },
   trialBannerWarning: { backgroundColor: colors.warningSoft },
-  actions: { position: "absolute", bottom: 150, right: spacing.lg, gap: spacing.md },
+  actionsRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
   sosButton: {
+    flex: 1,
     backgroundColor: colors.danger,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: "center",
+    justifyContent: "center",
     flexDirection: "row",
     gap: spacing.sm,
     ...shadow,
   },
-  sosButtonText: { color: "#fff", fontWeight: "700" },
+  sosButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   checkInButton: {
+    flex: 1,
     backgroundColor: colors.success,
     borderRadius: radius.pill,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: "center",
+    justifyContent: "center",
     flexDirection: "row",
     gap: spacing.sm,
     ...shadow,
   },
-  checkInButtonText: { color: "#fff", fontWeight: "700" },
+  checkInButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   memberList: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: colors.surface,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    maxHeight: 220,
+    maxHeight: "50%",
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     ...shadow,
   },
+  memberScroll: { flexGrow: 0 },
   memberListHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: spacing.sm },
   emptyState: { ...typography.caption, textAlign: "center", paddingVertical: spacing.md },
   memberRow: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.sm + 2 },
