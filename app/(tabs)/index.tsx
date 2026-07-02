@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
@@ -18,6 +18,7 @@ import {
 import { recordFamilyEvent } from "@/lib/notifications";
 import { setCurrentFamilyId, setCurrentUid, setSharingPaused as persistSharingPaused } from "@/lib/session";
 import { useLiveMembers } from "@/lib/useFamilyData";
+import { useFamilyEvents } from "@/lib/useFamilyEvents";
 import { db } from "@/lib/firebase";
 
 // OpenFreeMap: free vector tiles, no API key or billing account required.
@@ -86,8 +87,13 @@ export default function MapScreen() {
   const sharingPaused = userDoc?.settings.sharingPaused ?? false;
   const activationBlocked = isGatedFeatureBlocked(userDoc);
   const [selectedUid, setSelectedUid] = useState<string | null>(null);
-  const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [panelCollapsed, setPanelCollapsed] = useState(true);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
+  const allEvents = useFamilyEvents(familyId);
+  const alertEvents = allEvents.filter((e) => e.type === "sos" || e.type === "checkin");
+  const unreadCount = alertEvents.filter((e) => e.createdAt > lastSeenAt).length;
 
   useEffect(() => {
     setCurrentUid(uid ?? null);
@@ -208,6 +214,59 @@ export default function MapScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Bell notification button */}
+      <Pressable
+        style={[styles.bellBtn, { top: insets.top + 16 }]}
+        onPress={() => { setLastSeenAt(Date.now()); setShowNotifs(true); }}
+      >
+        <Ionicons name={unreadCount > 0 ? "notifications" : "notifications-outline"} size={22} color={colors.text} />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : String(unreadCount)}</Text>
+          </View>
+        )}
+      </Pressable>
+
+      {/* Notifications modal */}
+      <Modal visible={showNotifs} animationType="slide" transparent onRequestClose={() => setShowNotifs(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowNotifs(false)} />
+        <View style={[styles.notifsSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+          <View style={styles.notifsHeader}>
+            <Text style={styles.notifsTitle}>{t("notifications.title")}</Text>
+            <Pressable onPress={() => setShowNotifs(false)}>
+              <Ionicons name="close" size={22} color={colors.text} />
+            </Pressable>
+          </View>
+          {alertEvents.length === 0 ? (
+            <Text style={styles.notifsEmpty}>{t("notifications.empty")}</Text>
+          ) : (
+            <FlatList
+              data={alertEvents}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const sender = members.find((m) => m.uid === item.uid);
+                const name = sender?.user?.displayName ?? "Member";
+                const isSos = item.type === "sos";
+                return (
+                  <View style={styles.notifRow}>
+                    <View style={[styles.notifAvatar, isSos ? styles.notifAvatarSos : styles.notifAvatarSafe]}>
+                      <Text style={styles.notifAvatarText}>{name[0]}</Text>
+                    </View>
+                    <View style={styles.notifInfo}>
+                      <Text style={styles.notifName}>{name}</Text>
+                      <Text style={[styles.notifLabel, isSos ? styles.notifLabelSos : styles.notifLabelSafe]}>
+                        {isSos ? t("notifications.sos") : t("notifications.checkIn")}
+                      </Text>
+                    </View>
+                    <Text style={styles.notifTime}>{timeAgo(item.createdAt)}</Text>
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
+      </Modal>
 
       {activationBlocked ? (
         <View style={[styles.banner, styles.trialBannerBlocked, { top: insets.top + 72 }]}>
@@ -378,4 +437,75 @@ const styles = StyleSheet.create({
   memberMeta: { ...typography.caption, marginTop: 2 },
   memberMetaMuted: { ...typography.caption, marginTop: 2, color: colors.disabled, fontStyle: "italic" },
   memberAvatarMuted: { backgroundColor: colors.border },
+  // Bell button
+  bellBtn: {
+    position: "absolute",
+    right: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow,
+  },
+  badge: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: colors.danger,
+    borderRadius: radius.pill,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  // Notifications modal
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
+  notifsSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    maxHeight: "70%",
+    ...shadow,
+  },
+  notifsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  notifsTitle: { ...typography.title, fontSize: 18 },
+  notifsEmpty: { ...typography.caption, textAlign: "center", paddingVertical: spacing.xl },
+  notifRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  notifAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifAvatarSos: { backgroundColor: colors.dangerSoft },
+  notifAvatarSafe: { backgroundColor: colors.successSoft },
+  notifAvatarText: { fontWeight: "700", fontSize: 16 },
+  notifInfo: { flex: 1 },
+  notifName: { fontWeight: "600", color: colors.text, fontSize: 14 },
+  notifLabel: { fontSize: 12, marginTop: 2 },
+  notifLabelSos: { color: colors.danger, fontWeight: "600" },
+  notifLabelSafe: { color: colors.success, fontWeight: "600" },
+  notifTime: { ...typography.caption, color: colors.disabled },
 });

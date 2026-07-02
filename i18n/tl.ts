@@ -75,6 +75,12 @@ export const tl: TranslationKeys = {
     footerDeveloper: "Developer contact",
     footerAccount: "Naka-sign in bilang",
   },
+  notifications: {
+    title: "Mga alerto",
+    sos: "SOS alerto",
+    checkIn: "Ligtas ako",
+    empty: "Wala pang alerto",
+  },
   activation: {
     trialDaysLeft: "{{days}} araw na lang sa free trial mo",
     trialExpiredBanner: "Tapos na ang free trial mo",

@@ -73,6 +73,12 @@ export const en = {
     footerDeveloper: "Developer contact",
     footerAccount: "Signed in as",
   },
+  notifications: {
+    title: "Alerts",
+    sos: "SOS alert",
+    checkIn: "I'm safe",
+    empty: "No alerts yet",
+  },
   activation: {
     trialDaysLeft: "{{days}} day(s) left in your free trial",
     trialExpiredBanner: "Your free trial has ended",
