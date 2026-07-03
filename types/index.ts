@@ -9,6 +9,7 @@ export interface UserDoc {
     language: Language;
     sharingPaused: boolean;
   };
+  phone?: string;
   currentFamilyId?: string;
   trialStartedAt?: number;
   activation?: {

@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
@@ -157,6 +157,14 @@ export default function MapScreen() {
       return;
     }
     await recordFamilyEvent(familyId, { type: "sos", uid });
+    const phones = members
+      .filter((m) => m.uid !== uid && m.user?.phone)
+      .map((m) => m.user!.phone!);
+    if (phones.length > 0) {
+      const myName = userDoc?.displayName ?? "A family member";
+      const body = encodeURIComponent(`🆘 SOS! ${myName} needs help! Open FamGuard to see their location.`);
+      await Linking.openURL(`sms:${phones.join(",")}?body=${body}`);
+    }
     Alert.alert(t("sos.sent"));
   }
 

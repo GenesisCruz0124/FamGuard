@@ -51,6 +51,8 @@ export default function SettingsScreen() {
   const [language, setLanguage] = useState<Language>(userDoc?.settings.language ?? "en");
   const [codeInput, setCodeInput] = useState("");
   const [redeeming, setRedeeming] = useState(false);
+  const [phone, setPhone] = useState(userDoc?.phone ?? "");
+  const [savingPhone, setSavingPhone] = useState(false);
 
   async function handleRedeemCode() {
     if (!uid || !codeInput.trim()) return;
@@ -75,6 +77,14 @@ export default function SettingsScreen() {
     setLanguage(next);
     setAppLanguage(next);
     await db.collection("users").doc(uid).update({ "settings.language": next });
+  }
+
+  async function handleSavePhone() {
+    if (!uid) return;
+    setSavingPhone(true);
+    await db.collection("users").doc(uid).update({ phone: phone.trim() });
+    setSavingPhone(false);
+    Alert.alert("Saved", "Your phone number has been saved.");
   }
 
   async function handleTogglePause() {
@@ -134,6 +144,26 @@ export default function SettingsScreen() {
               <Switch value={language === "tl"} onValueChange={handleLanguageToggle} trackColor={{ true: colors.primary }} />
               <Text style={styles.languageOption}>{t("settings.taglish")}</Text>
             </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Ionicons name="call-outline" size={18} color={colors.primary} />
+            </View>
+            <TextInput
+              style={[styles.rowLabel, styles.phoneInput]}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="Phone number (+63...)"
+              placeholderTextColor={colors.disabled}
+              keyboardType="phone-pad"
+            />
+            <Button
+              label={savingPhone ? "..." : "Save"}
+              onPress={handleSavePhone}
+              disabled={savingPhone || !phone.trim()}
+              fullWidth={false}
+            />
           </View>
           <View style={styles.divider} />
           <Row
@@ -270,6 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     backgroundColor: colors.surface,
   },
+  phoneInput: { fontSize: 15, color: colors.text, flex: 1 },
   footer: { marginTop: spacing.xl, gap: spacing.xs, paddingHorizontal: spacing.xs },
   footerText: { ...typography.caption },
 });
