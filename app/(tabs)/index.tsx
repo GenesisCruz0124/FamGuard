@@ -120,14 +120,36 @@ export default function MapScreen() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
   const [cameraCenter, setCameraCenter] = useState<[number, number] | null>(null);
+  const [selectedTrailPoint, setSelectedTrailPoint] = useState<{ lat: number; lng: number; updatedAt: number } | null>(null);
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
   const allEvents = useFamilyEvents(familyId);
   const alertEvents = allEvents.filter((e) => e.type === "sos" || e.type === "checkin");
+  const incomingCall = allEvents.find((e) => e.type === "call" && e.targetUid === uid && Date.now() - e.createdAt < 60000);
   const unreadCount = alertEvents.filter((e) => e.createdAt > lastSeenAt).length;
 
   useEffect(() => {
     setCurrentUid(uid ?? null);
   }, [uid]);
+
+  useEffect(() => {
+    if (!incomingCall) return;
+    const caller = members.find((m) => m.uid === incomingCall.uid);
+    const callerName = caller?.user?.displayName ?? "A family member";
+    Alert.alert(
+      `📞 Incoming call`,
+      `${callerName} is calling you`,
+      [
+        { text: "Ignore", style: "cancel" },
+        {
+          text: "Join Video Call",
+          onPress: () => {
+            const url = `https://meet.jit.si/${incomingCall.roomName}`;
+            import("expo-web-browser").then(({ default: wb }) => wb.openBrowserAsync(url));
+          },
+        },
+      ]
+    );
+  }, [incomingCall?.roomName]);
 
   useEffect(() => {
     setCurrentFamilyId(familyId ?? null);
@@ -221,6 +243,7 @@ export default function MapScreen() {
                 key={`trail-${i}`}
                 id={`trail-${selectedUid}-${i}`}
                 coordinate={[p.lng, p.lat]}
+                onSelected={() => { setCameraCenter([p.lng, p.lat]); setSelectedTrailPoint(p); }}
               >
                 <View style={[styles.trailPin, { backgroundColor: color }, isLatest && styles.trailPinLatest]}>
                   <Text style={[styles.trailPinText, isLatest && styles.trailPinTextLatest]}>{abbr}</Text>
@@ -323,6 +346,17 @@ export default function MapScreen() {
             </Text>
           </View>
         )
+      )}
+
+      {selectedTrailPoint && (
+        <Pressable
+          style={[styles.trailPointPanel, { bottom: 180 + insets.bottom }]}
+          onPress={() => setSelectedTrailPoint(null)}
+        >
+          <Ionicons name="location" size={14} color={colors.primary} />
+          <Text style={styles.trailPointTime}>{formatAlertTime(selectedTrailPoint.updatedAt)}</Text>
+          <Ionicons name="close-circle" size={16} color={colors.disabled} />
+        </Pressable>
       )}
 
       <View style={[styles.memberList, { paddingBottom: insets.bottom + spacing.sm }]}>
@@ -565,5 +599,13 @@ const styles = StyleSheet.create({
   },
   trailPinLatest: { width: 28, height: 28, borderRadius: 14, opacity: 1 },
   trailPinText: { color: "#fff", fontSize: 7, fontWeight: "700" as const },
+  trailPointPanel: {
+    position: "absolute", left: spacing.lg, right: spacing.lg,
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    flexDirection: "row", alignItems: "center", gap: spacing.sm,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md,
+    ...require("@/constants/theme").shadow,
+  },
+  trailPointTime: { flex: 1, fontSize: 13, fontWeight: "600" as const, color: colors.text },
   trailPinTextLatest: { fontSize: 9 },
 });

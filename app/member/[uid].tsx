@@ -3,13 +3,14 @@ import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { FlatList, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, Linking, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
 
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
+import { recordFamilyEvent } from "@/lib/notifications";
 import { useLocationHistory } from "@/lib/useLocationHistory";
 import { useLiveMembers } from "@/lib/useFamilyData";
 import type { LocationHistoryPoint } from "@/types";
@@ -99,9 +100,24 @@ export default function MemberDetailScreen() {
 
   const roomName = ["FamGuard", ...[myUid ?? "", memberUid ?? ""].sort()].join("-");
 
-  async function startCall(video: boolean) {
-    const base = `https://meet.jit.si/${roomName}`;
-    const url = video ? base : `${base}#config.startWithVideoMuted=true`;
+  async function startAudioCall() {
+    const phone = member?.user?.phone;
+    const familyId = userDoc?.currentFamilyId;
+    if (!familyId || !myUid) return;
+    // Notify the callee in-app
+    await recordFamilyEvent(familyId, { type: "call", uid: myUid, targetUid: memberUid, roomName });
+    if (phone) {
+      await Linking.openURL(`tel:${phone}`);
+    } else {
+      Alert.alert("No phone number", `${member?.user?.displayName ?? "This member"} hasn't saved a phone number yet.`);
+    }
+  }
+
+  async function startVideoCall() {
+    const familyId = userDoc?.currentFamilyId;
+    if (!familyId || !myUid) return;
+    await recordFamilyEvent(familyId, { type: "call", uid: myUid, targetUid: memberUid, roomName });
+    const url = `https://meet.jit.si/${roomName}`;
     await WebBrowser.openBrowserAsync(url);
   }
 
@@ -145,12 +161,12 @@ export default function MemberDetailScreen() {
           </View>
         </View>
         {memberUid !== myUid && (
-          <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={() => startCall(false)}>
+          <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={startAudioCall}>
             <Ionicons name="call" size={20} color="#fff" />
           </Pressable>
         )}
         {memberUid !== myUid && (
-          <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={() => startCall(true)}>
+          <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={startVideoCall}>
             <Ionicons name="videocam" size={20} color="#fff" />
           </Pressable>
         )}

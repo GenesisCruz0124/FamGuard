@@ -72,11 +72,13 @@ export interface LocationHistoryPoint {
   updatedAt: number;
 }
 
-export type FamilyEventType = "geofence_enter" | "geofence_exit" | "sos" | "checkin";
+export type FamilyEventType = "geofence_enter" | "geofence_exit" | "sos" | "checkin" | "call";
 
 export interface FamilyEventDoc {
   type: FamilyEventType;
   uid: string;
+  targetUid?: string;
+  roomName?: string;
   placeId?: string;
   message?: string;
   createdAt: number;

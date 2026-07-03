@@ -27,7 +27,7 @@ export async function registerFcmToken(uid: string, token: string) {
 // on families/{familyId}/events/{eventId} is responsible for the actual push.
 export async function recordFamilyEvent(
   familyId: string,
-  event: { type: "geofence_enter" | "geofence_exit" | "sos" | "checkin"; uid: string; placeId?: string; message?: string }
+  event: { type: "geofence_enter" | "geofence_exit" | "sos" | "checkin" | "call"; uid: string; targetUid?: string; roomName?: string; placeId?: string; message?: string }
 ) {
   await db.collection("families").doc(familyId).collection("events").add({
     ...event,
