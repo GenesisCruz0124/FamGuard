@@ -327,8 +327,13 @@ export default function SettingsScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>
             {t("settings.footerVersion", {
-              version: Constants.expoConfig?.extra?.appVersion ?? "?",
-              build: Constants.expoConfig?.extra?.androidVersionCode ?? "?",
+              version: Constants.expoConfig?.extra?.appVersion
+                ?? (Constants as any).manifest?.extra?.appVersion
+                ?? (Constants as any).manifest2?.extra?.expoClient?.extra?.appVersion
+                ?? "1.2.0",
+              build: Constants.expoConfig?.extra?.androidVersionCode
+                ?? (Constants as any).manifest?.extra?.androidVersionCode
+                ?? "4",
             })}
           </Text>
           <Text style={styles.footerText}>{t("settings.footerDeveloper")}: genesiscruz.dev@gmail.com</Text>
