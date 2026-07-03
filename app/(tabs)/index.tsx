@@ -33,6 +33,22 @@ function timeAgo(updatedAt: number): string {
   return `${Math.floor(seconds / 3600)}h`;
 }
 
+type OnlineStatus = "online" | "away" | "offline";
+
+function getOnlineStatus(updatedAt: number | undefined): OnlineStatus {
+  if (!updatedAt) return "offline";
+  const seconds = (Date.now() - updatedAt) / 1000;
+  if (seconds < 300) return "online";   // within 5 min
+  if (seconds < 3600) return "away";    // within 1 hour
+  return "offline";
+}
+
+const STATUS_COLOR: Record<OnlineStatus, string> = {
+  online: "#16a34a",
+  away: "#d97706",
+  offline: "#94a3b8",
+};
+
 const TRAIL_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#0891b2"];
 
 function memberColor(uid: string, allUids: string[]): string {
@@ -316,8 +332,11 @@ export default function MapScreen() {
               const isSharing = m.member.consentGiven && m.location;
               return (
                 <Pressable key={m.uid} style={styles.memberRow} onPress={() => router.push(`/member/${m.uid}`)}>
-                  <View style={[styles.memberAvatar, !isSharing && styles.memberAvatarMuted]}>
-                    <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
+                  <View style={styles.avatarWrap}>
+                    <View style={[styles.memberAvatar, !isSharing && styles.memberAvatarMuted]}>
+                      <Text style={styles.memberAvatarText}>{(m.user?.displayName ?? "?")[0]}</Text>
+                    </View>
+                    <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[getOnlineStatus(m.location?.updatedAt)] }]} />
                   </View>
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>{m.user?.displayName ?? "Member"}</Text>
@@ -437,6 +456,17 @@ const styles = StyleSheet.create({
   memberMeta: { ...typography.caption, marginTop: 2 },
   memberMetaMuted: { ...typography.caption, marginTop: 2, color: colors.disabled, fontStyle: "italic" },
   memberAvatarMuted: { backgroundColor: colors.border },
+  avatarWrap: { position: "relative" },
+  statusDot: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.surface,
+  },
   // Bell button
   bellBtn: {
     position: "absolute",

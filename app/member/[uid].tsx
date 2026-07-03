@@ -17,6 +17,17 @@ import type { LocationHistoryPoint } from "@/types";
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 MapLibreGL.setAccessToken(null);
 
+type OnlineStatus = "online" | "away" | "offline";
+function getOnlineStatus(updatedAt: number | undefined): OnlineStatus {
+  if (!updatedAt) return "offline";
+  const s = (Date.now() - updatedAt) / 1000;
+  if (s < 300) return "online";
+  if (s < 3600) return "away";
+  return "offline";
+}
+const STATUS_COLOR: Record<OnlineStatus, string> = { online: "#16a34a", away: "#d97706", offline: "#94a3b8" };
+const STATUS_LABEL: Record<OnlineStatus, string> = { online: "Online", away: "Away", offline: "Offline" };
+
 // Haversine distance in meters between two lat/lng points
 function distanceMeters(a: LocationHistoryPoint, b: LocationHistoryPoint): number {
   const R = 6371000;
@@ -98,16 +109,27 @@ export default function MemberDetailScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{(member.user?.displayName ?? "?")[0]}</Text>
+        <View style={styles.avatarWrap}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{(member.user?.displayName ?? "?")[0]}</Text>
+          </View>
+          <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[getOnlineStatus(member.location?.updatedAt)] }]} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{member.user?.displayName ?? "Member"}</Text>
-          <Text style={styles.meta}>
-            {member.location
-              ? `${t("map.battery", { level: member.location.batteryLevel ?? "?" })} · ${member.location.isMoving ? "Moving" : "Stationary"}`
-              : "Not sharing location"}
-          </Text>
+          <View style={styles.metaRow}>
+            <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[getOnlineStatus(member.location?.updatedAt)] + "22" }]}>
+              <View style={[styles.statusPillDot, { backgroundColor: STATUS_COLOR[getOnlineStatus(member.location?.updatedAt)] }]} />
+              <Text style={[styles.statusPillText, { color: STATUS_COLOR[getOnlineStatus(member.location?.updatedAt)] }]}>
+                {STATUS_LABEL[getOnlineStatus(member.location?.updatedAt)]}
+              </Text>
+            </View>
+            <Text style={styles.meta}>
+              {member.location
+                ? `${t("map.battery", { level: member.location.batteryLevel ?? "?" })} · ${member.location.isMoving ? "Moving" : "Stationary"}`
+                : "Not sharing location"}
+            </Text>
+          </View>
         </View>
         <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={() => startCall(false)}>
           <Ionicons name="call" size={20} color="#fff" />
@@ -226,6 +248,7 @@ export default function MemberDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg },
+  avatarWrap: { position: "relative" },
   avatar: {
     width: 48,
     height: 48,
@@ -235,8 +258,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarText: { color: colors.primary, fontWeight: "700", fontSize: 20 },
+  statusDot: {
+    position: "absolute",
+    bottom: 1,
+    right: 1,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.background,
+  },
+  metaRow: { marginTop: 3, gap: spacing.xs },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  statusPillDot: { width: 6, height: 6, borderRadius: 3 },
+  statusPillText: { fontSize: 11, fontWeight: "700" },
   title: { ...typography.title, fontSize: 20 },
-  meta: { ...typography.caption, marginTop: 2 },
+  meta: { ...typography.caption },
   mapCard: {
     marginHorizontal: spacing.lg,
     borderRadius: radius.lg,
