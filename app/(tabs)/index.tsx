@@ -122,6 +122,7 @@ export default function MapScreen() {
   const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
   const [cameraCenter, setCameraCenter] = useState<[number, number] | null>(null);
   const [compassHeading, setCompassHeading] = useState(0);
+  const [compassLocked, setCompassLocked] = useState(false);
   const [selectedTrailPoint, setSelectedTrailPoint] = useState<{ lat: number; lng: number; updatedAt: number } | null>(null);
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined, userDoc?.settings?.trailHours ?? 8);
   const allEvents = useFamilyEvents(familyId);
@@ -216,6 +217,14 @@ export default function MapScreen() {
     Alert.alert(t("sos.checkInSent"));
   }
 
+  function goToMyLocation() {
+    const mine = membersWithLocation.find((m) => m.uid === uid);
+    if (mine?.location) {
+      setCameraCenter([mine.location.lng, mine.location.lat]);
+    }
+    setCompassLocked(false);
+  }
+
   const membersWithLocation = members.filter((m) => m.member.consentGiven && m.location);
   const markersToRender = spreadCoincidentMarkers(membersWithLocation);
   // All members shown in list; only those actively sharing shown on map
@@ -243,7 +252,7 @@ export default function MapScreen() {
             })()
           }
           animationDuration={600}
-          heading={compassHeading}
+          heading={compassLocked ? 0 : compassHeading}
         />
         {selectedUid && (() => {
           const color = memberColor(selectedUid, markersToRender.map((m) => m.uid));
@@ -305,6 +314,27 @@ export default function MapScreen() {
             <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : String(unreadCount)}</Text>
           </View>
         )}
+      </Pressable>
+
+      {/* Compass / my-location button */}
+      <Pressable
+        style={[styles.mapCtrlBtn, { top: insets.top + 70 }]}
+        onPress={goToMyLocation}
+      >
+        <Ionicons
+          name="navigate"
+          size={20}
+          color={compassLocked ? colors.textMuted : colors.primary}
+          style={{ transform: [{ rotate: `${compassLocked ? 0 : compassHeading}deg` }] }}
+        />
+      </Pressable>
+
+      {/* Map steady toggle */}
+      <Pressable
+        style={[styles.mapCtrlBtn, { top: insets.top + 122 }, compassLocked && styles.mapCtrlBtnActive]}
+        onPress={() => setCompassLocked((v) => !v)}
+      >
+        <Ionicons name={compassLocked ? "lock-closed" : "lock-open-outline"} size={20} color={compassLocked ? "#fff" : colors.text} />
       </Pressable>
 
       {/* Notifications modal */}
@@ -562,6 +592,18 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
   },
   // Bell button
+  mapCtrlBtn: {
+    position: "absolute",
+    right: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow,
+  },
+  mapCtrlBtnActive: { backgroundColor: colors.primary },
   bellBtn: {
     position: "absolute",
     right: spacing.lg,
