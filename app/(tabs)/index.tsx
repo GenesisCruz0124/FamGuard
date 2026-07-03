@@ -235,22 +235,6 @@ export default function MapScreen() {
         ))}
       </MapLibreGL.MapView>
 
-      <View style={[styles.banner, { top: insets.top + 16 }]}>
-        <Ionicons
-          name={sharingPaused ? "eye-off-outline" : "eye-outline"}
-          size={16}
-          color={colors.text}
-        />
-        <Text style={styles.bannerText}>
-          {sharingPaused ? t("map.resumeSharing") : t("map.sharingBanner")}
-        </Text>
-        <Pressable onPress={togglePause} style={styles.bannerButton}>
-          <Text style={styles.bannerButtonText}>
-            {sharingPaused ? t("map.resumeSharing") : t("map.pauseSharing")}
-          </Text>
-        </Pressable>
-      </View>
-
       {/* Bell notification button */}
       <Pressable
         style={[styles.bellBtn, { top: insets.top + 16 }]}
@@ -314,7 +298,7 @@ export default function MapScreen() {
       </Modal>
 
       {activationBlocked ? (
-        <View style={[styles.banner, styles.trialBannerBlocked, { top: insets.top + 72 }]}>
+        <View style={[styles.banner, styles.trialBannerBlocked, { top: insets.top + 16 }]}>
           <Ionicons name="alert-circle" size={16} color={colors.danger} />
           <Text style={[styles.bannerText, styles.trialBannerTextBlocked]}>{t("activation.trialExpiredBanner")}</Text>
           <Pressable onPress={() => router.push("/(tabs)/settings")} style={styles.bannerButton}>
@@ -324,7 +308,7 @@ export default function MapScreen() {
       ) : (
         !userDoc?.activation?.activated &&
         trialDaysRemaining(userDoc?.trialStartedAt) <= 3 && (
-          <View style={[styles.banner, styles.trialBannerWarning, { top: insets.top + 72 }]}>
+          <View style={[styles.banner, styles.trialBannerWarning, { top: insets.top + 16 }]}>
             <Ionicons name="time-outline" size={16} color={colors.warning} />
             <Text style={styles.bannerText}>
               {t("activation.trialDaysLeft", { days: trialDaysRemaining(userDoc?.trialStartedAt) })}

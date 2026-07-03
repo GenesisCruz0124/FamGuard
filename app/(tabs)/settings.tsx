@@ -199,11 +199,28 @@ export default function SettingsScreen() {
             />
           </View>
           <View style={styles.divider} />
-          <Row
-            icon={userDoc?.settings.sharingPaused ? "play-circle-outline" : "pause-circle-outline"}
-            label={userDoc?.settings.sharingPaused ? t("settings.resumeSharing") : t("settings.pauseSharing")}
-            onPress={handleTogglePause}
-          />
+          <View style={styles.row}>
+            <View style={[styles.rowIcon, userDoc?.settings.sharingPaused ? styles.rowIconDanger : styles.rowIconSuccess]}>
+              <Ionicons
+                name={userDoc?.settings.sharingPaused ? "eye-off-outline" : "eye-outline"}
+                size={18}
+                color={userDoc?.settings.sharingPaused ? colors.danger : colors.success}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowLabel}>
+                {userDoc?.settings.sharingPaused ? "Location sharing paused" : "Location is being shared"}
+              </Text>
+              <Text style={styles.sharingSubtext}>
+                {userDoc?.settings.sharingPaused ? "Tap to resume sharing with family" : "Family members can see your location"}
+              </Text>
+            </View>
+            <Pressable style={[styles.sharingToggleBtn, userDoc?.settings.sharingPaused && styles.sharingToggleBtnResume]} onPress={handleTogglePause}>
+              <Text style={styles.sharingToggleBtnText}>
+                {userDoc?.settings.sharingPaused ? t("settings.resumeSharing") : t("settings.pauseSharing")}
+              </Text>
+            </Pressable>
+          </View>
         </Card>
 
         {family && (
@@ -370,6 +387,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   phoneInput: { fontSize: 15, color: colors.text, flex: 1 },
+  sharingSubtext: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
+  sharingToggleBtn: {
+    backgroundColor: colors.dangerSoft, borderRadius: radius.sm,
+    paddingVertical: spacing.xs + 2, paddingHorizontal: spacing.sm,
+  },
+  sharingToggleBtnResume: { backgroundColor: colors.successSoft },
+  sharingToggleBtnText: { fontSize: 12, fontWeight: "600", color: colors.text },
   memberActionBtn: {
     width: 34, height: 34, borderRadius: radius.sm,
     backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center", marginLeft: 6,
