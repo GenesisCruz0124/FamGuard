@@ -268,18 +268,30 @@ export default function MapScreen() {
             );
           });
         })()}
-        {markersToRender.map((m) => (
-          <MapLibreGL.PointAnnotation
-            key={m.uid}
-            id={m.uid}
-            coordinate={[m.markerLng, m.markerLat]}
-            onSelected={() => { setSelectedUid(m.uid); router.push(`/member/${m.uid}`); }}
-          >
-            <View style={styles.marker}>
-              <Text style={styles.markerText}>{(m.user?.displayName ?? "?")[0]}</Text>
-            </View>
-          </MapLibreGL.PointAnnotation>
-        ))}
+        {markersToRender.map((m) => {
+          const color = memberColor(m.uid, markersToRender.map((x) => x.uid));
+          const heading = m.location?.heading ?? null;
+          const isMoving = m.location?.isMoving ?? false;
+          const rotation = (heading !== null && heading >= 0) ? heading : 0;
+          const showArrow = isMoving && heading !== null && heading >= 0;
+          return (
+            <MapLibreGL.PointAnnotation
+              key={m.uid}
+              id={m.uid}
+              coordinate={[m.markerLng, m.markerLat]}
+              onSelected={() => { setSelectedUid(m.uid); router.push(`/member/${m.uid}`); }}
+            >
+              <View style={styles.markerWrap}>
+                {showArrow && (
+                  <View style={[styles.arrowHead, { borderBottomColor: color, transform: [{ rotate: `${rotation}deg` }] }]} />
+                )}
+                <View style={[styles.marker, { backgroundColor: color }, showArrow && styles.markerSmall]}>
+                  <Text style={styles.markerText}>{initials(m.user?.displayName ?? "?")}</Text>
+                </View>
+              </View>
+            </MapLibreGL.PointAnnotation>
+          );
+        })}
       </MapLibreGL.MapView>
 
       {/* Bell notification button */}
@@ -434,17 +446,28 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+  markerWrap: { alignItems: "center" },
+  arrowHead: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 9,
+    borderRightWidth: 9,
+    borderBottomWidth: 18,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    marginBottom: -4,
+  },
   marker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
+    borderWidth: 2.5,
     borderColor: "#fff",
   },
-  markerText: { color: "#fff", fontWeight: "700" },
+  markerSmall: { width: 30, height: 30, borderRadius: 15 },
+  markerText: { color: "#fff", fontWeight: "700", fontSize: 11 },
   banner: {
     position: "absolute",
     left: spacing.lg,
