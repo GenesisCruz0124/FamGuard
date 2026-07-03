@@ -226,9 +226,11 @@ export default function MapScreen() {
           zoomLevel={15}
           centerCoordinate={
             cameraCenter ??
-            (membersWithLocation[0]?.location
-              ? [membersWithLocation[0].location.lng, membersWithLocation[0].location.lat]
-              : [121.0, 14.6])
+            (() => {
+              const mine = membersWithLocation.find((m) => m.uid === uid);
+              const loc = mine?.location ?? membersWithLocation[0]?.location;
+              return loc ? [loc.lng, loc.lat] : [121.0, 14.6];
+            })()
           }
           animationDuration={600}
         />
