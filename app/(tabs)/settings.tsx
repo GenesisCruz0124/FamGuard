@@ -98,6 +98,32 @@ export default function SettingsScreen() {
     await db.collection("users").doc(uid).update({ "settings.trailHours": h });
   }
 
+  async function handleResetTrail() {
+    const familyId = userDoc?.currentFamilyId;
+    if (!uid || !familyId) return;
+    Alert.alert("Reset trail?", "This will clear all your recorded trail points.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Reset",
+        style: "destructive",
+        onPress: async () => {
+          const pointsRef = db
+            .collection("families").doc(familyId)
+            .collection("locationHistory").doc(uid)
+            .collection("points");
+          let snap = await pointsRef.limit(100).get();
+          while (!snap.empty) {
+            const batch = db.batch();
+            snap.docs.forEach((d) => batch.delete(d.ref));
+            await batch.commit();
+            snap = await pointsRef.limit(100).get();
+          }
+          Alert.alert("Done", "Trail cleared.");
+        },
+      },
+    ]);
+  }
+
   async function handleTogglePause() {
     if (!uid || !userDoc) return;
     await db.collection("users").doc(uid).update({ "settings.sharingPaused": !userDoc.settings.sharingPaused });
@@ -249,6 +275,8 @@ export default function SettingsScreen() {
               ))}
             </View>
           </View>
+          <View style={styles.divider} />
+          <Row icon="trash-outline" label="Reset my trail" onPress={handleResetTrail} danger />
         </Card>
 
         {family && (
