@@ -33,6 +33,7 @@ export interface FamilyDoc {
   createdBy: string;
   inviteCode: string;
   memberUids: string[];
+  blockedUids?: string[];
   createdAt: number;
 }
 

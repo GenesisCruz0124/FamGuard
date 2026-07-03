@@ -7,6 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isOwner(familyId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/families/$(familyId)).data.createdBy == request.auth.uid;
+    }
+
     function isFamilyMember(familyId) {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/families/$(familyId)/members/$(request.auth.uid));
@@ -83,7 +88,7 @@ service cloud.firestore {
         allow read: if isFamilyMember(familyId);
         allow create: if isSignedIn() && request.auth.uid == uid;
         allow update: if isSignedIn() && request.auth.uid == uid;
-        allow delete: if isSignedIn() && request.auth.uid == uid;
+        allow delete: if isSignedIn() && (request.auth.uid == uid || isOwner(familyId));
       }
 
       match /locations/{uid} {
@@ -91,6 +96,7 @@ service cloud.firestore {
         // if that member has consented and isn't currently paused.
         allow read: if isFamilyMember(familyId) && memberConsented(familyId, uid);
         allow write: if isSignedIn() && request.auth.uid == uid && isFamilyMember(familyId);
+        allow delete: if isSignedIn() && isOwner(familyId);
       }
 
       match /locationHistory/{uid}/points/{pointId} {

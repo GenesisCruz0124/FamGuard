@@ -12,7 +12,8 @@ import { setAppLanguage, t } from "@/i18n";
 import { redeemActivationCode, trialDaysRemaining } from "@/lib/activation";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { leaveFamily } from "@/lib/family";
+import { blockMember, leaveFamily, removeMember } from "@/lib/family";
+import { useLiveMembers } from "@/lib/useFamilyData";
 import { useFamily } from "@/lib/useFamilyData";
 import type { Language } from "@/types";
 
@@ -53,6 +54,8 @@ export default function SettingsScreen() {
   const [redeeming, setRedeeming] = useState(false);
   const [phone, setPhone] = useState(userDoc?.phone ?? "");
   const [savingPhone, setSavingPhone] = useState(false);
+  const members = useLiveMembers(userDoc?.currentFamilyId);
+  const isOwner = family?.createdBy === uid;
 
   async function handleRedeemCode() {
     if (!uid || !codeInput.trim()) return;
@@ -90,6 +93,36 @@ export default function SettingsScreen() {
   async function handleTogglePause() {
     if (!uid || !userDoc) return;
     await db.collection("users").doc(uid).update({ "settings.sharingPaused": !userDoc.settings.sharingPaused });
+  }
+
+  async function handleRemoveMember(targetUid: string, name: string) {
+    const familyId = userDoc?.currentFamilyId;
+    if (!familyId) return;
+    Alert.alert("Remove member", `Remove ${name} from the family group?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          await removeMember(familyId, targetUid);
+        },
+      },
+    ]);
+  }
+
+  async function handleBlockMember(targetUid: string, name: string) {
+    const familyId = userDoc?.currentFamilyId;
+    if (!familyId) return;
+    Alert.alert("Block member", `Block ${name}? They will be removed and won't be able to rejoin.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Block",
+        style: "destructive",
+        onPress: async () => {
+          await blockMember(familyId, targetUid);
+        },
+      },
+    ]);
   }
 
   async function handleLeaveFamily() {
@@ -188,6 +221,42 @@ export default function SettingsScreen() {
               </View>
               <View style={styles.divider} />
               <Row icon="exit-outline" label={t("settings.leaveFamily")} onPress={handleLeaveFamily} danger />
+            </Card>
+          </>
+        )}
+
+        {isOwner && members.length > 1 && (
+          <>
+            <SectionLabel>Members</SectionLabel>
+            <Card style={styles.card}>
+              {members
+                .filter((m) => m.uid !== uid)
+                .map((m, i, arr) => {
+                  const name = m.user?.displayName ?? "Member";
+                  return (
+                    <View key={m.uid}>
+                      <View style={styles.row}>
+                        <View style={styles.rowIcon}>
+                          <Ionicons name="person-outline" size={18} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.rowLabel, { flex: 1 }]}>{name}</Text>
+                        <Pressable
+                          style={styles.memberActionBtn}
+                          onPress={() => handleRemoveMember(m.uid, name)}
+                        >
+                          <Ionicons name="person-remove-outline" size={16} color={colors.warning} />
+                        </Pressable>
+                        <Pressable
+                          style={[styles.memberActionBtn, styles.memberActionBtnDanger]}
+                          onPress={() => handleBlockMember(m.uid, name)}
+                        >
+                          <Ionicons name="ban-outline" size={16} color={colors.danger} />
+                        </Pressable>
+                      </View>
+                      {i < arr.length - 1 && <View style={styles.divider} />}
+                    </View>
+                  );
+                })}
             </Card>
           </>
         )}
@@ -301,6 +370,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   phoneInput: { fontSize: 15, color: colors.text, flex: 1 },
+  memberActionBtn: {
+    width: 34, height: 34, borderRadius: radius.sm,
+    backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center", marginLeft: 6,
+  },
+  memberActionBtnDanger: { backgroundColor: colors.dangerSoft },
   footer: { marginTop: spacing.xl, gap: spacing.xs, paddingHorizontal: spacing.xs },
   footerText: { ...typography.caption },
 });

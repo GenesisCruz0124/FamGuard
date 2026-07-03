@@ -49,6 +49,11 @@ export async function joinFamilyByInviteCode(inviteCode: string, uid: string): P
   }
 
   const familyDoc = snap.docs[0];
+  const familyData = familyDoc.data() as import("@/types").FamilyDoc;
+  if (familyData.blockedUids?.includes(uid)) {
+    throw new Error("You have been removed from this family group.");
+  }
+
   const member: FamilyMemberDoc = {
     role: "member",
     joinedAt: Date.now(),
@@ -73,4 +78,19 @@ export async function leaveFamily(familyId: string, uid: string): Promise<void> 
   await familyRef.collection("members").doc(uid).delete();
   await familyRef.collection("locations").doc(uid).delete();
   await db.collection("users").doc(uid).update({ currentFamilyId: firestore.FieldValue.delete() });
+}
+
+export async function removeMember(familyId: string, targetUid: string): Promise<void> {
+  await leaveFamily(familyId, targetUid);
+}
+
+export async function blockMember(familyId: string, targetUid: string): Promise<void> {
+  const familyRef = db.collection("families").doc(familyId);
+  await familyRef.update({
+    memberUids: firestore.FieldValue.arrayRemove(targetUid),
+    blockedUids: firestore.FieldValue.arrayUnion(targetUid),
+  });
+  await familyRef.collection("members").doc(targetUid).delete();
+  await familyRef.collection("locations").doc(targetUid).delete();
+  await db.collection("users").doc(targetUid).update({ currentFamilyId: firestore.FieldValue.delete() });
 }
