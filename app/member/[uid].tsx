@@ -1,7 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useLocalSearchParams } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import { Alert, FlatList, Linking, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -113,14 +112,6 @@ export default function MemberDetailScreen() {
     }
   }
 
-  async function startVideoCall() {
-    const familyId = userDoc?.currentFamilyId;
-    if (!familyId || !myUid) return;
-    await recordFamilyEvent(familyId, { type: "call", uid: myUid, targetUid: memberUid, roomName });
-    const url = `https://meet.jit.si/${roomName}`;
-    await WebBrowser.openBrowserAsync(url);
-  }
-
   function openMapAt(point: LocationHistoryPoint) {
     setFocusPoint(point);
     setMapExpanded(true);
@@ -165,11 +156,7 @@ export default function MemberDetailScreen() {
             <Ionicons name="call" size={20} color="#fff" />
           </Pressable>
         )}
-        {memberUid !== myUid && (
-          <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={startVideoCall}>
-            <Ionicons name="videocam" size={20} color="#fff" />
-          </Pressable>
-        )}
+
       </View>
 
       {/* Mini trail map */}
@@ -411,5 +398,4 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   callBtnAudio: { backgroundColor: colors.success },
-  callBtnVideo: { backgroundColor: colors.primary },
 });
