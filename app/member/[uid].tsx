@@ -54,9 +54,10 @@ function TrailRow({ point, prev }: { point: LocationHistoryPoint; prev?: Locatio
       <View style={styles.trailInfo}>
         <Text style={styles.trailTime}>{date} · {time}</Text>
         {dist !== null && dist > 2 && (
-          <Text style={styles.trailDist}>
-            <Ionicons name="navigate-outline" size={11} color={colors.primary} /> moved {formatDist(dist)}
-          </Text>
+          <View style={styles.trailDistRow}>
+            <Ionicons name="navigate-outline" size={11} color={colors.primary} />
+            <Text style={styles.trailDist}>moved {formatDist(dist)}</Text>
+          </View>
         )}
         {(dist === null || dist <= 2) && (
           <Text style={styles.trailStay}>Stationary</Text>
@@ -354,7 +355,8 @@ const styles = StyleSheet.create({
   },
   trailInfo: { flex: 1 },
   trailTime: { fontSize: 13, fontWeight: "600", color: colors.text },
-  trailDist: { fontSize: 12, color: colors.primary, marginTop: 2 },
+  trailDistRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  trailDist: { fontSize: 12, color: colors.primary },
   trailStay: { fontSize: 12, color: colors.disabled, marginTop: 2, fontStyle: "italic" },
   callBtn: {
     width: 40,
