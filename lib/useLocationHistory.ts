@@ -15,23 +15,29 @@ export function useLocationHistory(
       return;
     }
 
-    db.collection("families")
+    return db
+      .collection("families")
       .doc(familyId)
       .collection("locationHistory")
       .doc(memberUid)
       .collection("points")
       .orderBy("updatedAt", "asc")
       .limit(288)
-      .get()
-      .then((snap) => {
-        setPoints(
-          snap.docs.map((d) => {
-            const data = d.data();
-            return { lat: data.lat as number, lng: data.lng as number, updatedAt: data.updatedAt as number };
-          })
-        );
-      })
-      .catch(() => setPoints([]));
+      .onSnapshot(
+        (snap) => {
+          setPoints(
+            snap.docs.map((d) => {
+              const data = d.data();
+              return {
+                lat: data.lat as number,
+                lng: data.lng as number,
+                updatedAt: data.updatedAt as number,
+              };
+            })
+          );
+        },
+        () => setPoints([])
+      );
   }, [familyId, memberUid]);
 
   return points;

@@ -21,8 +21,8 @@ type OnlineStatus = "online" | "away" | "offline";
 function getOnlineStatus(updatedAt: number | undefined): OnlineStatus {
   if (!updatedAt) return "offline";
   const s = (Date.now() - updatedAt) / 1000;
-  if (s < 300) return "online";
-  if (s < 3600) return "away";
+  if (s < 900) return "online";
+  if (s < 7200) return "away";
   return "offline";
 }
 const STATUS_COLOR: Record<OnlineStatus, string> = { online: "#16a34a", away: "#d97706", offline: "#94a3b8" };

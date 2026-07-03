@@ -38,8 +38,8 @@ type OnlineStatus = "online" | "away" | "offline";
 function getOnlineStatus(updatedAt: number | undefined): OnlineStatus {
   if (!updatedAt) return "offline";
   const seconds = (Date.now() - updatedAt) / 1000;
-  if (seconds < 300) return "online";   // within 5 min
-  if (seconds < 3600) return "away";    // within 1 hour
+  if (seconds < 900) return "online";   // within 15 min
+  if (seconds < 7200) return "away";   // within 2 hours
   return "offline";
 }
 
