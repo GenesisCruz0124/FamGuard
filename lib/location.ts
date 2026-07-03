@@ -61,6 +61,19 @@ export async function writeLiveLocation(location: Location.LocationObject) {
   await checkGeofences(familyId, uid, doc.lat, doc.lng, places);
 }
 
+const TRAIL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const TRAIL_MIN_DISTANCE_METERS = 30;    // skip if moved less than 30 m
+
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 async function appendHistoryPoint(familyId: string, uid: string, lat: number, lng: number) {
   const pointsRef = db
     .collection("families")
@@ -68,6 +81,16 @@ async function appendHistoryPoint(familyId: string, uid: string, lat: number, ln
     .collection("locationHistory")
     .doc(uid)
     .collection("points");
+
+  // Get the most recent point to check time + distance
+  const lastSnap = await pointsRef.orderBy("updatedAt", "desc").limit(1).get();
+  if (!lastSnap.empty) {
+    const last = lastSnap.docs[0].data();
+    const elapsed = Date.now() - (last.updatedAt as number);
+    const dist = haversineMeters(last.lat as number, last.lng as number, lat, lng);
+    // Skip if not enough time has passed OR location hasn't changed meaningfully
+    if (elapsed < TRAIL_INTERVAL_MS || dist < TRAIL_MIN_DISTANCE_METERS) return;
+  }
 
   await pointsRef.add({ lat, lng, updatedAt: Date.now() });
 
