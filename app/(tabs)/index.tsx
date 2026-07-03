@@ -94,6 +94,15 @@ function spreadCoincidentMarkers<T extends { location: { lat: number; lng: numbe
   );
 }
 
+function formatAlertTime(ms: number): string {
+  const d = new Date(ms);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return time;
+  return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${time}`;
+}
+
 export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -106,6 +115,7 @@ export default function MapScreen() {
   const [panelCollapsed, setPanelCollapsed] = useState(true);
   const [showNotifs, setShowNotifs] = useState(false);
   const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
+  const [cameraCenter, setCameraCenter] = useState<[number, number] | null>(null);
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
   const allEvents = useFamilyEvents(familyId);
   const alertEvents = allEvents.filter((e) => e.type === "sos" || e.type === "checkin");
@@ -187,12 +197,14 @@ export default function MapScreen() {
     <View style={styles.container}>
       <MapLibreGL.MapView style={styles.map} mapStyle={MAP_STYLE_URL}>
         <MapLibreGL.Camera
-          zoomLevel={12}
+          zoomLevel={15}
           centerCoordinate={
-            membersWithLocation[0]?.location
+            cameraCenter ??
+            (membersWithLocation[0]?.location
               ? [membersWithLocation[0].location.lng, membersWithLocation[0].location.lat]
-              : [121.0, 14.6]
+              : [121.0, 14.6])
           }
+          animationDuration={600}
         />
         {trailPoints.length >= 2 && selectedUid && (
           <MapLibreGL.ShapeSource
@@ -272,8 +284,16 @@ export default function MapScreen() {
                 const sender = members.find((m) => m.uid === item.uid);
                 const name = sender?.user?.displayName ?? "Member";
                 const isSos = item.type === "sos";
+                const memberLoc = sender?.location;
                 return (
-                  <View style={styles.notifRow}>
+                  <Pressable
+                    style={({ pressed }) => [styles.notifRow, pressed && { backgroundColor: colors.primarySoft }]}
+                    onPress={() => {
+                      setShowNotifs(false);
+                      setSelectedUid(item.uid);
+                      if (memberLoc) setCameraCenter([memberLoc.lng, memberLoc.lat]);
+                    }}
+                  >
                     <View style={[styles.notifAvatar, isSos ? styles.notifAvatarSos : styles.notifAvatarSafe]}>
                       <Text style={styles.notifAvatarText}>{name[0]}</Text>
                     </View>
@@ -283,8 +303,8 @@ export default function MapScreen() {
                         {isSos ? t("notifications.sos") : t("notifications.checkIn")}
                       </Text>
                     </View>
-                    <Text style={styles.notifTime}>{timeAgo(item.createdAt)}</Text>
-                  </View>
+                    <Text style={styles.notifTime}>{formatAlertTime(item.createdAt)}</Text>
+                  </Pressable>
                 );
               }}
             />
