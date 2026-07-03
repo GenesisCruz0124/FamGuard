@@ -1,11 +1,12 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import { useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useState } from "react";
 import { FlatList, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
-import { useState } from "react";
 
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
@@ -56,7 +57,7 @@ function TrailRow({ point, prev }: { point: LocationHistoryPoint; prev?: Locatio
 
 export default function MemberDetailScreen() {
   const { uid: memberUid } = useLocalSearchParams<{ uid: string }>();
-  const { userDoc } = useAuth();
+  const { userDoc, uid: myUid } = useAuth();
   const members = useLiveMembers(userDoc?.currentFamilyId);
   const member = members.find((m) => m.uid === memberUid);
   const trailPoints = useLocationHistory(userDoc?.currentFamilyId, memberUid);
@@ -74,6 +75,16 @@ export default function MemberDetailScreen() {
 
   // Center map on the most recent point
   const latestPoint = trailPoints[trailPoints.length - 1];
+
+  // Build a deterministic Jitsi room name from the two participants' UIDs
+  // so both devices always land in the same room regardless of who taps first.
+  const roomName = ["FamGuard", ...[myUid ?? "", memberUid ?? ""].sort()].join("-");
+
+  async function startCall(video: boolean) {
+    const base = `https://meet.jit.si/${roomName}`;
+    const url = video ? base : `${base}#config.startWithVideoMuted=true`;
+    await WebBrowser.openBrowserAsync(url);
+  }
 
   if (!member) {
     return (
@@ -98,6 +109,12 @@ export default function MemberDetailScreen() {
               : "Not sharing location"}
           </Text>
         </View>
+        <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={() => startCall(false)}>
+          <Ionicons name="call" size={20} color="#fff" />
+        </Pressable>
+        <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={() => startCall(true)}>
+          <Ionicons name="videocam" size={20} color="#fff" />
+        </Pressable>
       </View>
 
       {/* Mini trail map */}
@@ -294,4 +311,14 @@ const styles = StyleSheet.create({
   trailTime: { fontSize: 13, fontWeight: "600", color: colors.text },
   trailDist: { fontSize: 12, color: colors.primary, marginTop: 2 },
   trailStay: { fontSize: 12, color: colors.disabled, marginTop: 2, fontStyle: "italic" },
+  callBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadow,
+  },
+  callBtnAudio: { backgroundColor: colors.success },
+  callBtnVideo: { backgroundColor: colors.primary },
 });
