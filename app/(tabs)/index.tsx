@@ -206,21 +206,21 @@ export default function MapScreen() {
           }
           animationDuration={600}
         />
-        {trailPoints.length >= 2 && selectedUid && (
-          <MapLibreGL.ShapeSource
-            id="trail"
-            shape={{
-              type: "Feature",
-              geometry: { type: "LineString", coordinates: trailPoints.map((p) => [p.lng, p.lat]) },
-              properties: {},
-            }}
-          >
-            <MapLibreGL.LineLayer
-              id="trailLine"
-              style={{ lineColor: memberColor(selectedUid, markersToRender.map((m) => m.uid)), lineWidth: 3, lineOpacity: 0.8 }}
-            />
-          </MapLibreGL.ShapeSource>
-        )}
+        {selectedUid && trailPoints.map((p, i) => {
+          const color = memberColor(selectedUid, markersToRender.map((m) => m.uid));
+          const isLatest = i === trailPoints.length - 1;
+          return (
+            <MapLibreGL.PointAnnotation
+              key={`trail-${i}`}
+              id={`trail-${selectedUid}-${i}`}
+              coordinate={[p.lng, p.lat]}
+            >
+              <View style={[styles.trailPin, { backgroundColor: color }, isLatest && styles.trailPinLatest]}>
+                <Ionicons name="location" size={isLatest ? 16 : 10} color="#fff" />
+              </View>
+            </MapLibreGL.PointAnnotation>
+          );
+        })}
         {markersToRender.map((m) => (
           <MapLibreGL.PointAnnotation
             key={m.uid}
@@ -303,6 +303,7 @@ export default function MapScreen() {
                         {isSos ? t("notifications.sos") : t("notifications.checkIn")}
                       </Text>
                     </View>
+                    <Ionicons name="location" size={14} color={memberLoc ? colors.primary : colors.disabled} style={{ marginRight: 2 }} />
                     <Text style={styles.notifTime}>{formatAlertTime(item.createdAt)}</Text>
                   </Pressable>
                 );
@@ -566,4 +567,9 @@ const styles = StyleSheet.create({
   notifLabelSos: { color: colors.danger, fontWeight: "600" },
   notifLabelSafe: { color: colors.success, fontWeight: "600" },
   notifTime: { ...typography.caption, color: colors.disabled },
+  trailPin: {
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: "center", justifyContent: "center", opacity: 0.65,
+  },
+  trailPinLatest: { width: 28, height: 28, borderRadius: 14, opacity: 1 },
 });
