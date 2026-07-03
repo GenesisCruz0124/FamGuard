@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import * as Location from "expo-location";
 import { useState } from "react";
-import { Alert, FlatList, Modal, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, FlatList, Linking, Modal, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
@@ -29,8 +29,6 @@ export default function PlacesScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const [selected, setSelected] = useState<SelectedPlace | null>(null);
-  const [myCoord, setMyCoord] = useState<[number, number] | null>(null);
-  const [loadingDir, setLoadingDir] = useState(false);
 
   async function handleAddPlace() {
     if (!familyId || !uid || !name.trim()) return;
@@ -60,37 +58,18 @@ export default function PlacesScreen() {
 
   function closeMap() {
     setSelected(null);
-    setMyCoord(null);
   }
 
   async function handleDirection() {
     if (!selected) return;
-    setLoadingDir(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Location permission needed to show directions");
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({});
-      setMyCoord([pos.coords.longitude, pos.coords.latitude]);
-    } catch {
-      Alert.alert("Couldn't get your location");
-    } finally {
-      setLoadingDir(false);
-    }
+    const { lat, lng, name } = selected.data;
+    // Try native Google Maps first (Android), fall back to browser URL
+    const nativeUrl = `google.navigation:q=${lat},${lng}`;
+    const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(name)}`;
+    const canOpen = await Linking.canOpenURL(nativeUrl);
+    await Linking.openURL(canOpen ? nativeUrl : webUrl);
   }
 
-  const routeGeoJSON = selected && myCoord
-    ? {
-        type: "Feature" as const,
-        geometry: {
-          type: "LineString" as const,
-          coordinates: [myCoord, [selected.data.lng, selected.data.lat]],
-        },
-        properties: {},
-      }
-    : null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -191,22 +170,7 @@ export default function PlacesScreen() {
                 </View>
               </MapLibreGL.PointAnnotation>
 
-              {/* Route line from current location */}
-              {routeGeoJSON && (
-                <MapLibreGL.ShapeSource id="route" shape={routeGeoJSON}>
-                  <MapLibreGL.LineLayer
-                    id="routeLine"
-                    style={{ lineColor: colors.primary, lineWidth: 4, lineOpacity: 0.85, lineDasharray: [2, 2] }}
-                  />
-                </MapLibreGL.ShapeSource>
-              )}
 
-              {/* My location dot */}
-              {myCoord && (
-                <MapLibreGL.PointAnnotation id="myLoc" coordinate={myCoord}>
-                  <View style={styles.myDot} />
-                </MapLibreGL.PointAnnotation>
-              )}
             </MapLibreGL.MapView>
 
             {/* Close button */}
@@ -226,10 +190,9 @@ export default function PlacesScreen() {
               <Pressable
                 style={({ pressed }) => [styles.dirBtn, pressed && { opacity: 0.8 }]}
                 onPress={handleDirection}
-                disabled={loadingDir}
               >
                 <Ionicons name="navigate" size={18} color="#fff" />
-                <Text style={styles.dirBtnText}>{loadingDir ? "Locating…" : "Directions"}</Text>
+                <Text style={styles.dirBtnText}>Directions</Text>
               </Pressable>
             </View>
           </View>
@@ -287,14 +250,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     ...shadow,
-  },
-  myDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#2563eb",
-    borderWidth: 2,
-    borderColor: "#fff",
   },
   bottomPanel: {
     position: "absolute",
