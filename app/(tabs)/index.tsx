@@ -173,7 +173,7 @@ export default function MapScreen() {
   const membersWithLocation = members.filter((m) => m.member.consentGiven && m.location);
   const markersToRender = spreadCoincidentMarkers(membersWithLocation);
   // All members shown in list; only those actively sharing shown on map
-  const allMembers = members;
+  const allMembers = members.filter((m) => m.user?.displayName);
 
   return (
     <View style={styles.container}>

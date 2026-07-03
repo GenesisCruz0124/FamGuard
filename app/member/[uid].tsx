@@ -144,12 +144,16 @@ export default function MemberDetailScreen() {
             </Text>
           </View>
         </View>
-        <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={() => startCall(false)}>
-          <Ionicons name="call" size={20} color="#fff" />
-        </Pressable>
-        <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={() => startCall(true)}>
-          <Ionicons name="videocam" size={20} color="#fff" />
-        </Pressable>
+        {memberUid !== myUid && (
+          <Pressable style={[styles.callBtn, styles.callBtnAudio]} onPress={() => startCall(false)}>
+            <Ionicons name="call" size={20} color="#fff" />
+          </Pressable>
+        )}
+        {memberUid !== myUid && (
+          <Pressable style={[styles.callBtn, styles.callBtnVideo]} onPress={() => startCall(true)}>
+            <Ionicons name="videocam" size={20} color="#fff" />
+          </Pressable>
+        )}
       </View>
 
       {/* Mini trail map */}
