@@ -103,6 +103,10 @@ function formatAlertTime(ms: number): string {
   return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} ${time}`;
 }
 
+function initials(displayName: string): string {
+  return displayName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+}
+
 export default function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -206,21 +210,25 @@ export default function MapScreen() {
           }
           animationDuration={600}
         />
-        {selectedUid && trailPoints.map((p, i) => {
+        {selectedUid && (() => {
           const color = memberColor(selectedUid, markersToRender.map((m) => m.uid));
-          const isLatest = i === trailPoints.length - 1;
-          return (
-            <MapLibreGL.PointAnnotation
-              key={`trail-${i}`}
-              id={`trail-${selectedUid}-${i}`}
-              coordinate={[p.lng, p.lat]}
-            >
-              <View style={[styles.trailPin, { backgroundColor: color }, isLatest && styles.trailPinLatest]}>
-                <Ionicons name="location" size={isLatest ? 16 : 10} color="#fff" />
-              </View>
-            </MapLibreGL.PointAnnotation>
-          );
-        })}
+          const memberName = members.find((m) => m.uid === selectedUid)?.user?.displayName ?? "";
+          const abbr = initials(memberName);
+          return trailPoints.map((p, i) => {
+            const isLatest = i === trailPoints.length - 1;
+            return (
+              <MapLibreGL.PointAnnotation
+                key={`trail-${i}`}
+                id={`trail-${selectedUid}-${i}`}
+                coordinate={[p.lng, p.lat]}
+              >
+                <View style={[styles.trailPin, { backgroundColor: color }, isLatest && styles.trailPinLatest]}>
+                  <Text style={[styles.trailPinText, isLatest && styles.trailPinTextLatest]}>{abbr}</Text>
+                </View>
+              </MapLibreGL.PointAnnotation>
+            );
+          });
+        })()}
         {markersToRender.map((m) => (
           <MapLibreGL.PointAnnotation
             key={m.uid}
@@ -556,4 +564,6 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", opacity: 0.65,
   },
   trailPinLatest: { width: 28, height: 28, borderRadius: 14, opacity: 1 },
+  trailPinText: { color: "#fff", fontSize: 7, fontWeight: "700" as const },
+  trailPinTextLatest: { fontSize: 9 },
 });
