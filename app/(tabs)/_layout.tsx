@@ -26,12 +26,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="places"
-        options={{
-          title: t('places.title'),
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'location' : 'location-outline'} color={color} />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="settings"
