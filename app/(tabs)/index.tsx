@@ -245,8 +245,11 @@ export default function MapScreen() {
                 coordinate={[p.lng, p.lat]}
                 onSelected={() => { setCameraCenter([p.lng, p.lat]); setSelectedTrailPoint(p); }}
               >
-                <View style={[styles.trailPin, { backgroundColor: color }, isLatest && styles.trailPinLatest]}>
-                  <Text style={[styles.trailPinText, isLatest && styles.trailPinTextLatest]}>{abbr}</Text>
+                <View style={styles.trailPinWrap}>
+                  <View style={[styles.trailPinHead, { backgroundColor: color }, isLatest && styles.trailPinHeadLatest, !isLatest && { opacity: 0.65 }]}>
+                    <Text style={[styles.trailPinText, isLatest && styles.trailPinTextLatest]}>{abbr}</Text>
+                  </View>
+                  <View style={[styles.trailPinTail, { backgroundColor: color }, !isLatest && { opacity: 0.65 }]} />
                 </View>
               </MapLibreGL.PointAnnotation>
             );
@@ -593,11 +596,12 @@ const styles = StyleSheet.create({
   notifLabelSos: { color: colors.danger, fontWeight: "600" },
   notifLabelSafe: { color: colors.success, fontWeight: "600" },
   notifTime: { ...typography.caption, color: colors.disabled },
-  trailPin: {
-    width: 20, height: 20, borderRadius: 10,
-    alignItems: "center", justifyContent: "center", opacity: 0.65,
+  trailPinWrap: { alignItems: "center" },
+  trailPinHead: {
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: "center", justifyContent: "center",
   },
-  trailPinLatest: { width: 28, height: 28, borderRadius: 14, opacity: 1 },
+  trailPinHeadLatest: { width: 30, height: 30, borderRadius: 15 },
   trailPinText: { color: "#fff", fontSize: 7, fontWeight: "700" as const },
   trailPointPanel: {
     position: "absolute", left: spacing.lg, right: spacing.lg,
@@ -607,5 +611,9 @@ const styles = StyleSheet.create({
     ...require("@/constants/theme").shadow,
   },
   trailPointTime: { flex: 1, fontSize: 13, fontWeight: "600" as const, color: colors.text },
-  trailPinTextLatest: { fontSize: 9 },
+  trailPinTextLatest: { fontSize: 10 },
+  trailPinTail: {
+    width: 8, height: 8, borderRadius: 1,
+    transform: [{ rotate: "45deg" }], marginTop: -4,
+  },
 });
