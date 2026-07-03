@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View, Text } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -12,6 +12,8 @@ import { useAppGate } from '@/hooks/useAppGate';
 import { AuthProvider, useAuth } from '@/lib/auth';
 
 SplashScreen.preventAutoHideAsync();
+
+const MIN_LOADING_MS = 2500;
 
 function LoadingScreen() {
   return (
@@ -25,10 +27,16 @@ function LoadingScreen() {
 
 function GatedNavigator() {
   const { initializing } = useAuth();
+  const [minElapsed, setMinElapsed] = useState(false);
   useAppGate();
   const colorScheme = useColorScheme();
 
-  if (initializing) return <LoadingScreen />;
+  useEffect(() => {
+    const t = setTimeout(() => setMinElapsed(true), MIN_LOADING_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (initializing || !minElapsed) return <LoadingScreen />;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
