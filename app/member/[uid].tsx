@@ -28,7 +28,6 @@ function getOnlineStatus(updatedAt: number | undefined): OnlineStatus {
 const STATUS_COLOR: Record<OnlineStatus, string> = { online: "#16a34a", away: "#d97706", offline: "#94a3b8" };
 const STATUS_LABEL: Record<OnlineStatus, string> = { online: "Online", away: "Away", offline: "Offline" };
 
-// Haversine distance in meters between two lat/lng points
 function distanceMeters(a: LocationHistoryPoint, b: LocationHistoryPoint): number {
   const R = 6371000;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -44,12 +43,20 @@ function formatDist(m: number): string {
   return `${(m / 1000).toFixed(1)}km`;
 }
 
-function TrailRow({ point, prev }: { point: LocationHistoryPoint; prev?: LocationHistoryPoint }) {
+function TrailRow({
+  point,
+  prev,
+  onPress,
+}: {
+  point: LocationHistoryPoint;
+  prev?: LocationHistoryPoint;
+  onPress: () => void;
+}) {
   const time = new Date(point.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const date = new Date(point.updatedAt).toLocaleDateString([], { month: "short", day: "numeric" });
   const dist = prev ? distanceMeters(prev, point) : null;
   return (
-    <View style={styles.trailRow}>
+    <Pressable style={({ pressed }) => [styles.trailRow, pressed && { backgroundColor: colors.primarySoft }]} onPress={onPress}>
       <View style={styles.trailDot} />
       <View style={styles.trailInfo}>
         <Text style={styles.trailTime}>{date} · {time}</Text>
@@ -63,7 +70,8 @@ function TrailRow({ point, prev }: { point: LocationHistoryPoint; prev?: Locatio
           <Text style={styles.trailStay}>Stationary</Text>
         )}
       </View>
-    </View>
+      <Ionicons name="map-outline" size={14} color={colors.disabled} />
+    </Pressable>
   );
 }
 
@@ -73,9 +81,9 @@ export default function MemberDetailScreen() {
   const members = useLiveMembers(userDoc?.currentFamilyId);
   const member = members.find((m) => m.uid === memberUid);
   const trailPoints = useLocationHistory(userDoc?.currentFamilyId, memberUid);
-  // oldest→newest for the map; newest→oldest for the list
   const trailNewestFirst = [...trailPoints].reverse();
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [focusPoint, setFocusPoint] = useState<LocationHistoryPoint | null>(null);
 
   const trailGeoJSON = trailPoints.length >= 2
     ? {
@@ -85,17 +93,21 @@ export default function MemberDetailScreen() {
       }
     : null;
 
-  // Center map on the most recent point
   const latestPoint = trailPoints[trailPoints.length - 1];
+  // The point the full-screen camera should center on
+  const mapCenter = focusPoint ?? latestPoint;
 
-  // Build a deterministic Jitsi room name from the two participants' UIDs
-  // so both devices always land in the same room regardless of who taps first.
   const roomName = ["FamGuard", ...[myUid ?? "", memberUid ?? ""].sort()].join("-");
 
   async function startCall(video: boolean) {
     const base = `https://meet.jit.si/${roomName}`;
     const url = video ? base : `${base}#config.startWithVideoMuted=true`;
     await WebBrowser.openBrowserAsync(url);
+  }
+
+  function openMapAt(point: LocationHistoryPoint) {
+    setFocusPoint(point);
+    setMapExpanded(true);
   }
 
   if (!member) {
@@ -163,8 +175,8 @@ export default function MemberDetailScreen() {
                 <View style={styles.dotEnd} />
               </MapLibreGL.PointAnnotation>
             </MapLibreGL.MapView>
-            {/* Expand button overlay */}
-            <Pressable style={styles.expandBtn} onPress={() => setMapExpanded(true)}>
+            {/* Expand button — opens full map centered on latest point */}
+            <Pressable style={styles.expandBtn} onPress={() => openMapAt(latestPoint)}>
               <Ionicons name="expand-outline" size={20} color="#fff" />
             </Pressable>
             <View style={styles.mapLegend}>
@@ -186,9 +198,9 @@ export default function MemberDetailScreen() {
             <View style={styles.fullMapContainer}>
               <MapLibreGL.MapView style={styles.fullMap} mapStyle={MAP_STYLE_URL}>
                 <MapLibreGL.Camera
-                  zoomLevel={14}
-                  centerCoordinate={[latestPoint.lng, latestPoint.lat]}
-                  animationDuration={0}
+                  zoomLevel={16}
+                  centerCoordinate={mapCenter ? [mapCenter.lng, mapCenter.lat] : [latestPoint.lng, latestPoint.lat]}
+                  animationDuration={400}
                 />
                 <MapLibreGL.ShapeSource id="trailFull" shape={trailGeoJSON!}>
                   <MapLibreGL.LineLayer
@@ -202,14 +214,24 @@ export default function MemberDetailScreen() {
                 <MapLibreGL.PointAnnotation id="endFull" coordinate={[latestPoint.lng, latestPoint.lat]}>
                   <View style={styles.dotEnd} />
                 </MapLibreGL.PointAnnotation>
+                {/* Highlight the focused trail point */}
+                {focusPoint && focusPoint !== latestPoint && (
+                  <MapLibreGL.PointAnnotation id="focusPt" coordinate={[focusPoint.lng, focusPoint.lat]}>
+                    <View style={styles.dotFocus} />
+                  </MapLibreGL.PointAnnotation>
+                )}
               </MapLibreGL.MapView>
               {/* Close button */}
               <Pressable style={styles.closeBtn} onPress={() => setMapExpanded(false)}>
                 <Ionicons name="close" size={22} color="#fff" />
               </Pressable>
-              {/* Name label */}
+              {/* Info label */}
               <View style={styles.fullMapLabel}>
-                <Text style={styles.fullMapLabelText}>{member.user?.displayName ?? "Member"} · trail</Text>
+                <Text style={styles.fullMapLabelText}>
+                  {focusPoint
+                    ? new Date(focusPoint.updatedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                    : `${member.user?.displayName ?? "Member"} · current`}
+                </Text>
                 <Text style={styles.fullMapLabelSub}>{trailPoints.length} points · last 24h · pinch to zoom</Text>
               </View>
             </View>
@@ -234,8 +256,8 @@ export default function MemberDetailScreen() {
           renderItem={({ item, index }) => (
             <TrailRow
               point={item}
-              // "prev" in newest-first order means the point recorded just before this one
               prev={trailNewestFirst[index + 1]}
+              onPress={() => openMapAt(item)}
             />
           )}
           contentContainerStyle={styles.list}
@@ -334,28 +356,30 @@ const styles = StyleSheet.create({
   legendCount: { fontSize: 11, color: colors.disabled, marginLeft: "auto" },
   dotStart: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.textMuted, borderWidth: 2, borderColor: "#fff" },
   dotEnd: { width: 14, height: 14, borderRadius: 7, backgroundColor: colors.primary, borderWidth: 2, borderColor: "#fff" },
+  dotFocus: { width: 16, height: 16, borderRadius: 8, backgroundColor: "#f59e0b", borderWidth: 2, borderColor: "#fff" },
   sectionTitle: { ...typography.body, fontWeight: "600", paddingHorizontal: spacing.lg, marginBottom: spacing.xs },
   trailCount: { ...typography.caption },
   empty: { ...typography.caption, textAlign: "center", padding: spacing.xl },
   list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   trailRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: spacing.md,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.sm,
   },
   trailDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.primary,
-    marginTop: 5,
   },
   trailInfo: { flex: 1 },
   trailTime: { fontSize: 13, fontWeight: "600", color: colors.text },
-  trailDistRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  trailDistRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
   trailDist: { fontSize: 12, color: colors.primary },
   trailStay: { fontSize: 12, color: colors.disabled, marginTop: 2, fontStyle: "italic" },
   callBtn: {
