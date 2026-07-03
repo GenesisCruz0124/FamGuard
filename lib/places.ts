@@ -5,6 +5,10 @@ import type { PlaceDoc } from "@/types";
 export async function addPlace(familyId: string, place: PlaceDoc) {
   await db.collection("families").doc(familyId).collection("places").add(place);
 }
+export async function deletePlace(familyId: string, placeId: string) {
+  await db.collection("families").doc(familyId).collection("places").doc(placeId).delete();
+}
+
 
 function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;

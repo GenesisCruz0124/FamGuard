@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { colors, radius, shadow, spacing, typography } from "@/constants/theme";
 import { t } from "@/i18n";
 import { useAuth } from "@/lib/auth";
-import { addPlace } from "@/lib/places";
+import { addPlace, deletePlace } from "@/lib/places";
 import { usePlaces } from "@/lib/useFamilyData";
 import type { PlaceDoc } from "@/types";
 
@@ -58,6 +58,25 @@ export default function PlacesScreen() {
 
   function closeMap() {
     setSelected(null);
+  }
+
+  async function handleDelete() {
+    if (!selected || !familyId) return;
+    Alert.alert(
+      "Delete place",
+      `Remove "${selected.data.name}" from saved places?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await deletePlace(familyId, selected.id);
+            closeMap();
+          },
+        },
+      ]
+    );
   }
 
   async function handleDirection() {
@@ -187,13 +206,21 @@ export default function PlacesScreen() {
                   <Text style={styles.panelMeta}>{selected.data.radiusMeters}m radius</Text>
                 </View>
               </View>
-              <Pressable
-                style={({ pressed }) => [styles.dirBtn, pressed && { opacity: 0.8 }]}
-                onPress={handleDirection}
-              >
-                <Ionicons name="navigate" size={18} color="#fff" />
-                <Text style={styles.dirBtnText}>Directions</Text>
-              </Pressable>
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={({ pressed }) => [styles.dirBtn, { flex: 1 }, pressed && { opacity: 0.8 }]}
+                  onPress={handleDirection}
+                >
+                  <Ionicons name="navigate" size={18} color="#fff" />
+                  <Text style={styles.dirBtnText}>Directions</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.8 }]}
+                  onPress={handleDelete}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                </Pressable>
+              </View>
             </View>
           </View>
         )}
@@ -276,4 +303,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   dirBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  actionRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  deleteBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#fee2e2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
