@@ -324,7 +324,7 @@ export default function MapScreen() {
         <Ionicons
           name="navigate"
           size={20}
-          color={compassLocked ? colors.textMuted : colors.primary}
+          color={colors.text}
           style={{ transform: [{ rotate: `${compassLocked ? 0 : compassHeading}deg` }] }}
         />
       </Pressable>
@@ -334,7 +334,7 @@ export default function MapScreen() {
         style={[styles.mapCtrlBtn, { top: insets.top + 122 }, compassLocked && styles.mapCtrlBtnActive]}
         onPress={() => setCompassLocked((v) => !v)}
       >
-        <Ionicons name={compassLocked ? "lock-closed" : "lock-open-outline"} size={20} color={compassLocked ? "#fff" : colors.text} />
+        <Ionicons name={compassLocked ? "lock-closed" : "compass-outline"} size={20} color={compassLocked ? "#fff" : colors.text} />
       </Pressable>
 
       {/* Notifications modal */}
