@@ -3,19 +3,32 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { ActivityIndicator, Image, StyleSheet, View, Text } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useAppGate } from '@/hooks/useAppGate';
-import { AuthProvider } from '@/lib/auth';
+import { AuthProvider, useAuth } from '@/lib/auth';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+function LoadingScreen() {
+  return (
+    <View style={styles.loadingContainer}>
+      <Image source={require('../assets/images/icon.png')} style={styles.loadingLogo} />
+      <Text style={styles.loadingTitle}>FamGuard</Text>
+      <ActivityIndicator size="large" color="#4F8EF7" style={{ marginTop: 32 }} />
+    </View>
+  );
+}
+
 function GatedNavigator() {
+  const { initializing } = useAuth();
   useAppGate();
   const colorScheme = useColorScheme();
+
+  if (initializing) return <LoadingScreen />;
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -55,3 +68,24 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingLogo: {
+    width: 100,
+    height: 100,
+    borderRadius: 22,
+  },
+  loadingTitle: {
+    marginTop: 16,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#1a1a2e",
+    letterSpacing: 0.5,
+  },
+});

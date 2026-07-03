@@ -55,6 +55,10 @@ export const en = {
     backgroundDenied: "Background location permission is required so your location keeps sharing while the app is closed.",
     startFailed: "Couldn't start location sharing",
   },
+  trail: {
+    hoursLabel: "Trail coverage",
+    hours: "{{hours}}h",
+  },
   settings: {
     title: "Settings",
     sectionGeneral: "General",

@@ -121,7 +121,7 @@ export default function MapScreen() {
   const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
   const [cameraCenter, setCameraCenter] = useState<[number, number] | null>(null);
   const [selectedTrailPoint, setSelectedTrailPoint] = useState<{ lat: number; lng: number; updatedAt: number } | null>(null);
-  const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined);
+  const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined, userDoc?.settings?.trailHours ?? 8);
   const allEvents = useFamilyEvents(familyId);
   const alertEvents = allEvents.filter((e) => e.type === "sos" || e.type === "checkin");
   const incomingCall = allEvents.find((e) => e.type === "call" && e.targetUid === uid && Date.now() - e.createdAt < 60000);

@@ -8,6 +8,7 @@ export interface UserDoc {
   settings: {
     language: Language;
     sharingPaused: boolean;
+    trailHours?: number;
   };
   phone?: string;
   currentFamilyId?: string;

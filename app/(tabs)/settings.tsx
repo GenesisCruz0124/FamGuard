@@ -54,6 +54,8 @@ export default function SettingsScreen() {
   const [redeeming, setRedeeming] = useState(false);
   const [phone, setPhone] = useState(userDoc?.phone ?? "");
   const [savingPhone, setSavingPhone] = useState(false);
+  const TRAIL_HOUR_OPTIONS = [1, 4, 8, 12, 24];
+  const [trailHours, setTrailHours] = useState<number>(userDoc?.settings?.trailHours ?? 8);
   const members = useLiveMembers(userDoc?.currentFamilyId);
   const isOwner = family?.createdBy === uid;
 
@@ -88,6 +90,12 @@ export default function SettingsScreen() {
     await db.collection("users").doc(uid).update({ phone: phone.trim() });
     setSavingPhone(false);
     Alert.alert("Saved", "Your phone number has been saved.");
+  }
+
+  async function handleTrailHours(h: number) {
+    if (!uid) return;
+    setTrailHours(h);
+    await db.collection("users").doc(uid).update({ "settings.trailHours": h });
   }
 
   async function handleTogglePause() {
@@ -220,6 +228,26 @@ export default function SettingsScreen() {
                 {userDoc?.settings.sharingPaused ? t("settings.resumeSharing") : t("settings.pauseSharing")}
               </Text>
             </Pressable>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <View style={styles.rowIcon}>
+              <Ionicons name="time-outline" size={18} color={colors.primary} />
+            </View>
+            <Text style={[styles.rowLabel, { flex: 1 }]}>Trail coverage</Text>
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              {TRAIL_HOUR_OPTIONS.map((h) => (
+                <Pressable
+                  key={h}
+                  style={[styles.trailHourBtn, trailHours === h && styles.trailHourBtnActive]}
+                  onPress={() => handleTrailHours(h)}
+                >
+                  <Text style={[styles.trailHourBtnText, trailHours === h && styles.trailHourBtnTextActive]}>
+                    {h}h
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         </Card>
 
@@ -399,6 +427,10 @@ const styles = StyleSheet.create({
   },
   sharingToggleBtnResume: { backgroundColor: colors.successSoft },
   sharingToggleBtnText: { fontSize: 12, fontWeight: "600", color: colors.text },
+  trailHourBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  trailHourBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  trailHourBtnText: { fontSize: 12, color: colors.textMuted },
+  trailHourBtnTextActive: { color: "#fff", fontWeight: "600" },
   memberActionBtn: {
     width: 34, height: 34, borderRadius: radius.sm,
     backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center", marginLeft: 6,

@@ -57,6 +57,10 @@ export const tl: TranslationKeys = {
     backgroundDenied: "Kailangan ang background location permission para patuloy na naka-share ang location mo kapag sarado ang app.",
     startFailed: "Hindi nasimulan ang location sharing",
   },
+  trail: {
+    hoursLabel: "Trail coverage",
+    hours: "{{hours}}h",
+  },
   settings: {
     title: "Settings",
     sectionGeneral: "Pangkalahatan",

@@ -5,7 +5,8 @@ import type { LocationHistoryPoint } from "@/types";
 
 export function useLocationHistory(
   familyId: string | undefined,
-  memberUid: string | undefined
+  memberUid: string | undefined,
+  trailHours = 8
 ): LocationHistoryPoint[] {
   const [points, setPoints] = useState<LocationHistoryPoint[]>([]);
 
@@ -14,6 +15,9 @@ export function useLocationHistory(
       setPoints([]);
       return;
     }
+
+    const pointLimit = Math.ceil(trailHours * 60 / 5);
+    const since = Date.now() - trailHours * 60 * 60 * 1000;
 
     return db
       .collection("families")
@@ -38,7 +42,7 @@ export function useLocationHistory(
         },
         () => setPoints([])
       );
-  }, [familyId, memberUid]);
+  }, [familyId, memberUid, trailHours]);
 
   return points;
 }
