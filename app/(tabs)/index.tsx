@@ -10,6 +10,7 @@ import { t } from "@/i18n";
 import { isGatedFeatureBlocked, trialDaysRemaining } from "@/lib/activation";
 import { useLocationHistory } from "@/lib/useLocationHistory";
 import { useAuth } from "@/lib/auth";
+import * as Location from "expo-location";
 import {
   requestBackgroundPermission,
   requestForegroundPermission,
@@ -120,6 +121,7 @@ export default function MapScreen() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [lastSeenAt, setLastSeenAt] = useState(() => Date.now());
   const [cameraCenter, setCameraCenter] = useState<[number, number] | null>(null);
+  const [compassHeading, setCompassHeading] = useState(0);
   const [selectedTrailPoint, setSelectedTrailPoint] = useState<{ lat: number; lng: number; updatedAt: number } | null>(null);
   const trailPoints = useLocationHistory(familyId, selectedUid ?? undefined, userDoc?.settings?.trailHours ?? 8);
   const allEvents = useFamilyEvents(familyId);
@@ -217,6 +219,14 @@ export default function MapScreen() {
   const membersWithLocation = members.filter((m) => m.member.consentGiven && m.location);
   const markersToRender = spreadCoincidentMarkers(membersWithLocation);
   // All members shown in list; only those actively sharing shown on map
+  useEffect(() => {
+    let sub: Location.LocationSubscription | null = null;
+    Location.watchHeadingAsync((h) => {
+      setCompassHeading(h.trueHeading >= 0 ? h.trueHeading : h.magHeading);
+    }).then((s) => { sub = s; });
+    return () => { sub?.remove(); };
+  }, []);
+
   const allMembers = members.filter((m) => m.user?.displayName);
 
   return (
@@ -233,6 +243,7 @@ export default function MapScreen() {
             })()
           }
           animationDuration={600}
+          heading={compassHeading}
         />
         {selectedUid && (() => {
           const color = memberColor(selectedUid, markersToRender.map((m) => m.uid));
