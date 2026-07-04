@@ -318,7 +318,7 @@ export default function MapScreen() {
 
       {/* Compass / my-location button */}
       <Pressable
-        style={[styles.mapCtrlBtn, { top: insets.top + 70 }]}
+        style={[styles.mapCtrlBtn, { bottom: insets.bottom + 200 }]}
         onPress={goToMyLocation}
       >
         <Ionicons
@@ -331,7 +331,7 @@ export default function MapScreen() {
 
       {/* Map steady toggle */}
       <Pressable
-        style={[styles.mapCtrlBtn, { top: insets.top + 122 }, compassLocked && styles.mapCtrlBtnActive]}
+        style={[styles.mapCtrlBtn, { bottom: insets.bottom + 148 }, compassLocked && styles.mapCtrlBtnActive]}
         onPress={() => setCompassLocked((v) => !v)}
       >
         <Ionicons name={compassLocked ? "lock-closed" : "compass-outline"} size={20} color={compassLocked ? "#fff" : colors.text} />
