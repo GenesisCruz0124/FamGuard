@@ -318,7 +318,7 @@ export default function MapScreen() {
 
       {/* Compass / my-location button */}
       <Pressable
-        style={[styles.mapCtrlBtn, { bottom: insets.bottom + 200 }]}
+        style={[styles.mapCtrlBtn, styles.mapCtrlBtnLeft, { top: "38%" }]}
         onPress={goToMyLocation}
       >
         <Ionicons
@@ -331,7 +331,7 @@ export default function MapScreen() {
 
       {/* Map steady toggle */}
       <Pressable
-        style={[styles.mapCtrlBtn, { bottom: insets.bottom + 148 }, compassLocked && styles.mapCtrlBtnActive]}
+        style={[styles.mapCtrlBtn, styles.mapCtrlBtnLeft, { top: "44%" }, compassLocked && styles.mapCtrlBtnActive]}
         onPress={() => setCompassLocked((v) => !v)}
       >
         <Ionicons name={compassLocked ? "lock-closed" : "compass-outline"} size={20} color={compassLocked ? "#fff" : colors.text} />
@@ -604,6 +604,7 @@ const styles = StyleSheet.create({
     ...shadow,
   },
   mapCtrlBtnActive: { backgroundColor: colors.primary },
+  mapCtrlBtnLeft: { right: undefined, left: 16 },
   bellBtn: {
     position: "absolute",
     right: spacing.lg,
