@@ -13,7 +13,7 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 
 SplashScreen.preventAutoHideAsync();
 
-const MIN_LOADING_MS = 2500;
+const MIN_LOADING_MS = 10000;
 
 function LoadingScreen() {
   const pulse = useRef(new Animated.Value(1)).current;
