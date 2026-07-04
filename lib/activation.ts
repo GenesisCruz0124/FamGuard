@@ -8,9 +8,17 @@ const TRIAL_DAYS = 14;
 const TRIAL_MS = TRIAL_DAYS * 24 * 60 * 60 * 1000;
 
 const ACTIVATED_KEY = "famguard.activated";
+const DEVICE_ID_KEY = "famguard.deviceId";
 
-export function getDeviceId(): string | null {
-  return Application.getAndroidId();
+export async function getDeviceId(): Promise<string> {
+  // getAndroidId() is reliable on API 26+; fall back to a persisted random ID on older devices.
+  const androidId = Application.getAndroidId();
+  if (androidId) return androidId;
+  const stored = await SecureStore.getItemAsync(DEVICE_ID_KEY);
+  if (stored) return stored;
+  const generated = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  await SecureStore.setItemAsync(DEVICE_ID_KEY, generated);
+  return generated;
 }
 
 export function isTrialExpired(trialStartedAt: number | undefined): boolean {
@@ -43,7 +51,7 @@ export type RedeemResult =
   | { ok: false; reason: "not_found" | "bound_to_other_device" | "error" };
 
 export async function redeemActivationCode(code: string, uid: string): Promise<RedeemResult> {
-  const deviceId = getDeviceId();
+  const deviceId = await getDeviceId();
   if (!deviceId) return { ok: false, reason: "error" };
 
   const normalizedCode = code.trim().toUpperCase();
